@@ -687,4 +687,42 @@ impl<'a> NixEngine<'a> {
         };
         Ok(removed)
     }
+
+    fn programs_nix(&self) -> std::path::PathBuf {
+        self.config_dir
+            .join(format!("flake/users/{}/programs/default.nix", self.username))
+    }
+
+    // ── Enable / Disable ──
+
+    /// Enable a service or program in the configuration.
+    pub fn enable(&self, module_path: &str, user: bool) -> Result<()> {
+        let path = if user {
+            self.programs_nix()
+        } else {
+            self.systems_nix()
+        };
+        let source = std::fs::read_to_string(&path)?;
+        let new_source = crate::nixast::add_enable_line(&source, module_path)?;
+        if new_source != source {
+            std::fs::write(path, new_source)?;
+        }
+        Ok(())
+    }
+
+    /// Disable (remove) a service or program enable line.
+    pub fn disable(&self, module_path: &str, user: bool) -> Result<bool> {
+        let path = if user {
+            self.programs_nix()
+        } else {
+            self.systems_nix()
+        };
+        let source = std::fs::read_to_string(&path)?;
+        let new_source = crate::nixast::remove_enable_line(&source, module_path)?;
+        let changed = new_source != source;
+        if changed {
+            std::fs::write(path, new_source)?;
+        }
+        Ok(changed)
+    }
 }

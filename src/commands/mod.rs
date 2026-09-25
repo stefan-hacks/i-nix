@@ -5,6 +5,7 @@ pub mod dev;
 pub mod diff;
 pub mod doctor;
 pub mod edit;
+pub mod enable;
 pub mod init;
 pub mod install;
 pub mod list;

@@ -133,6 +133,25 @@ enum Commands {
         target: String,
     },
 
+    /// Enable a service or program declaratively
+    Enable {
+        /// Service or program to enable (e.g. ssh, firefox, docker)
+        #[arg(required_unless_present = "list")]
+        name: Option<String>,
+        /// Enable as a user program (programs.<name>.enable) instead of system service
+        #[arg(short, long)]
+        user: bool,
+        /// Treat as a service (services.<name>.enable) — this is the default for system targets
+        #[arg(long)]
+        service: bool,
+        /// Treat as a program (programs.<name>.enable) — default for --user
+        #[arg(long)]
+        program: bool,
+        /// List known services and programs
+        #[arg(long)]
+        list: bool,
+    },
+
     /// Update flake inputs and show available upgrades
     Update {
         /// Update all inputs without asking
@@ -231,6 +250,9 @@ async fn main() {
         }
         Commands::Edit { target } => {
             edit::run(&target).await
+        }
+        Commands::Enable { name, user, service, program, list } => {
+            enable::run(&config_dir, name, user, service, program, list, cli.verbose, cli.dry_run).await
         }
         Commands::Update { all } => {
             update::run(&config_dir, all, cli.verbose, cli.dry_run).await

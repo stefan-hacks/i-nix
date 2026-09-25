@@ -225,6 +225,72 @@ fn format_multiline_packages(attr_path: &str, packages: &[PackageEntry]) -> Stri
     out
 }
 
+/// Add an enable line (e.g. services.openssh.enable = true;) to a Nix file.
+/// Looks for a section comment, or appends before the last `}`.
+pub fn add_enable_line(source: &str, module_path: &str) -> Result<String> {
+    if source.contains(&format!("{}.enable", module_path)) {
+        return Ok(source.to_string());
+    }
+
+    let mut lines: Vec<String> = source.lines().map(|s| s.to_string()).collect();
+
+    let section_comment = if module_path.starts_with("services.") {
+        "# ── Services ──"
+    } else {
+        "# ── Programs ──"
+    };
+
+    let mut insert_idx = None;
+    let mut last_brace = None;
+
+    for (i, line) in lines.iter().enumerate() {
+        if line.trim() == section_comment.trim() {
+            insert_idx = Some(i + 1);
+        }
+        if line.trim() == "}" {
+            last_brace = Some(i);
+        }
+    }
+
+    let enable_line = format!("  {}.enable = true;", module_path);
+
+    if let Some(idx) = insert_idx {
+        lines.insert(idx, enable_line);
+    } else if let Some(idx) = last_brace {
+        lines.insert(idx, enable_line);
+    } else {
+        lines.push(enable_line);
+    }
+
+    let new_source = lines.join("\n");
+    validate_nix_syntax(&new_source)?;
+    Ok(new_source)
+}
+
+/// Remove an enable line from a Nix file.
+pub fn remove_enable_line(source: &str, module_path: &str) -> Result<String> {
+    let target = format!("{}.enable", module_path);
+    let lines: Vec<String> = source.lines().map(|s| s.to_string()).collect();
+    let mut new_lines = Vec::new();
+    let mut removed = false;
+
+    for line in lines {
+        if line.contains(&target) {
+            removed = true;
+            continue;
+        }
+        new_lines.push(line);
+    }
+
+    if removed {
+        let new_source = new_lines.join("\n");
+        validate_nix_syntax(&new_source)?;
+        Ok(new_source)
+    } else {
+        Ok(source.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
