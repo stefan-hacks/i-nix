@@ -1,6 +1,7 @@
 pub mod adopt;
 pub mod apply;
 pub mod container;
+pub mod desktop;
 pub mod dev;
 pub mod diff;
 pub mod doctor;

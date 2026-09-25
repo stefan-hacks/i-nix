@@ -4,6 +4,7 @@ use std::process;
 
 mod commands;
 mod config;
+mod desktop;
 mod engine;
 mod flake;
 mod home;
@@ -168,6 +169,19 @@ enum Commands {
         program: bool,
     },
 
+    /// Manage desktop environments (GNOME, KDE, Hyprland, Sway, etc.)
+    Desktop {
+        /// Subcommand: detect, generate, list, apply
+        #[arg(default_value = "")]
+        subcommand: String,
+        /// Desktop environment name (for generate)
+        #[arg(default_value = "")]
+        name: String,
+        /// Generate from live dconf/settings instead of template
+        #[arg(short, long)]
+        live: bool,
+    },
+
     /// Update flake inputs and show available upgrades
     Update {
         /// Update all inputs without asking
@@ -272,6 +286,10 @@ async fn main() {
         }
         Commands::Disable { name, user, service, program } => {
             enable::disable(&config_dir, &name, user, service, program, cli.verbose, cli.dry_run).await
+        }
+        Commands::Desktop { subcommand, name, live } => {
+            commands::desktop::run(&config_dir, Some(subcommand), Some(name), live, cli.verbose, cli.dry_run
+            ).await
         }
         Commands::Update { all } => {
             update::run(&config_dir, all, cli.verbose, cli.dry_run).await
