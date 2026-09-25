@@ -94,36 +94,31 @@ pub struct ConfigModel {
 }
 
 impl ConfigModel {
-    pub fn from_flake(flake_path: &Path) -> Result<Self> {
-        // Read the generated Nix files and parse them into this model
-        // This is the reverse of generating Nix — parse Nix AST back to intent
+    pub fn from_flake(flake_path: &Path, hostname: &str, username: &str) -> Result<Self> {
         let mut model = ConfigModel::default();
-        
-        // Parse configuration.nix (or generated systems/default.nix)
-        let config_path = flake_path.join("systems/default.nix");
+
+        // Parse systems/<host>/default.nix
+        let config_path = flake_path.join(format!("systems/{}/default.nix", hostname));
         if config_path.exists() {
             let content = fs::read_to_string(&config_path)?;
-            model.parse_system_config(&content)?;
+            model.system_packages = crate::nixast::extract_packages(&content, "environment.systemPackages");
         }
-        
-        // Parse home.nix (or generated home/default.nix)
-        let home_path = flake_path.join("home/default.nix");
-        if home_path.exists() {
-            let content = fs::read_to_string(&home_path)?;
-            model.parse_home_config(&content)?;
+
+        // Parse users/<user>/packages.nix
+        let packages_path = flake_path.join(format!("users/{}/packages/default.nix", username));
+        if packages_path.exists() {
+            let content = fs::read_to_string(&packages_path)?;
+            model.user_packages = crate::nixast::extract_packages(&content, "home.packages");
         }
-        
+
         Ok(model)
     }
-    
+
     fn parse_system_config(&mut self, _content: &str) -> Result<()> {
-        // TODO: Use rnix to parse AST and extract system packages, services, programs
-        // For MVP, we'll do simple line-based parsing with clear upgrade path to rnix
         Ok(())
     }
-    
+
     fn parse_home_config(&mut self, _content: &str) -> Result<()> {
-        // TODO: Same as above for home-manager config
         Ok(())
     }
 }

@@ -16,7 +16,11 @@ pub async fn run(
         anyhow::bail!("i-nix not initialized. Run `i-nix init` first.");
     }
 
-    let model = ConfigModel::from_flake(&config_path.join("flake")
+    let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+    let model = ConfigModel::from_flake(
+        &config_path.join("flake"),
+        &state.hostname,
+        &username,
     )?;
 
     println!();
