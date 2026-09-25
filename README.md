@@ -121,6 +121,11 @@ i-nix apply
 | `shell` | Start dev shell | `i-nix shell python nodejs` |
 | `dev` | Scaffold project flake | `i-nix dev rust my-project` |
 | `container` | Build OCI images | `i-nix container build .#my-image` |
+| `desktop` | Manage desktop environments | `i-nix desktop generate gnome` |
+| `desktop detect` | Auto-detect current DE | `i-nix desktop detect` |
+| `desktop list` | Show all supported DEs | `i-nix desktop list` |
+| `desktop apply` | Wire DE into flake | `i-nix desktop apply` |
+| `sync` | Detect & re-import changes | `i-nix sync --yes` |
 
 ---
 
@@ -385,6 +390,44 @@ imports = [ ./hyprland.nix ];
 # Sway
 imports = [ ./sway.nix ];
 ```
+
+---
+
+## `desktop` Command
+
+```bash
+i-nix desktop detect              # Detect current DE
+i-nix desktop list                # List all supported DEs
+i-nix desktop generate gnome    # Scaffold GNOME config (with dconf parser)
+i-nix desktop generate hyprland # Scaffold Hyprland config
+i-nix desktop apply             # Wire DE imports into flake
+```
+
+**Supported DEs:** GNOME, KDE Plasma, Hyprland, Sway, i3, Niri, XFCE, Cinnamon, Pop!_OS, QuickShell, Noctalia, DankLinux.
+
+GNOME config uses the native Rust dconf parser (equivalent to `nix-my-gnome -s`) producing categorized modules:
+```text
+gnome-settings/
+  ├── default.nix
+  ├── gtk.nix
+  ├── shell.nix
+  └── shell-extensions.nix
+```
+
+## `sync` Command
+
+```bash
+i-nix sync                    # Show all divergences
+i-nix sync packages          # Show imperative packages only
+i-nix sync services          # Show enabled services only
+i-nix sync --yes             # Auto-import all divergences
+```
+
+Detects and re-imports:
+- **Imperative packages** (`nix-env -i` or `apt install`)
+- **User-installed packages** (`home.packages`)
+- **Enabled services** (`systemctl enable`)
+- **Config file drift** (manual `.nix` edits)
 
 ---
 
