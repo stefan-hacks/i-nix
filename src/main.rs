@@ -139,6 +139,51 @@ enum Commands {
         #[arg(short, long)]
         all: bool,
     },
+
+    /// Start a dev shell with packages (nix-shell / devShell)
+    Shell {
+        /// Packages to include in the shell (not required with --list or --flake)
+        #[arg(required_unless_present_any = ["list", "flake"])]
+        packages: Vec<String>,
+        /// Enter current flake's devShell instead
+        #[arg(long)]
+        flake: bool,
+        /// List known dev templates
+        #[arg(long)]
+        list: bool,
+        /// Pure shell (ignore host environment)
+        #[arg(long)]
+        pure: bool,
+    },
+
+    /// Scaffold a new Nix development project
+    Dev {
+        /// Stack/language: rust, node, python, go, haskell, generic
+        #[arg(default_value = "")]
+        stack: String,
+        /// Project name
+        name: Option<String>,
+        /// List available templates
+        #[arg(long)]
+        list: bool,
+    },
+
+    /// Build and manage OCI container images
+    Container {
+        /// Action: build, run, push, list, load
+        action: String,
+        /// Flake target or image name
+        target: Option<String>,
+        /// Additional packages to include
+        #[arg(last = true)]
+        packages: Vec<String>,
+        /// Image tag
+        #[arg(short, long)]
+        tag: Option<String>,
+        /// Container registry
+        #[arg(short, long)]
+        registry: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -189,6 +234,15 @@ async fn main() {
         }
         Commands::Update { all } => {
             update::run(&config_dir, all, cli.verbose, cli.dry_run).await
+        }
+        Commands::Shell { packages, flake, list, pure } => {
+            shell::run(packages, flake, list, pure).await
+        }
+        Commands::Dev { stack, name, list } => {
+            dev::run(&stack, name, list).await
+        }
+        Commands::Container { action, target, packages, tag, registry } => {
+            container::run(&action, target, packages, tag, registry).await
         }
     };
 
