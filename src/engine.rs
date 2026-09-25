@@ -141,6 +141,12 @@ impl<'a> NixEngine<'a> {
 
   # ── User account (managed by i-nix) ──
   # This creates a basic user. Customize in systems/default.nix or modules.
+
+  # ── Filesystems ──
+  # Configure your root filesystem here.
+  # Example (uncomment after disk partitioning):
+  # fileSystems."/" = {{ device = "/dev/disk/by-label/nixos"; fsType = "ext4"; }};
+  # fileSystems."/boot" = {{ device = "/dev/disk/by-label/boot"; fsType = "vfat"; }};
   users.users.{} = {{
     isNormalUser = true;
     group = "{}";
