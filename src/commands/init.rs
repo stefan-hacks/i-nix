@@ -52,9 +52,9 @@ pub async fn run(
     // Create the flake structure
     let engine = NixEngine::new(config_path, &hostname, &username);
     let with_home_manager = matches!(mode, INixMode::System | INixMode::UserOnly);
+    engine.init("system", with_home_manager)?;
 
-    // Configuration is generated via template files during init
-    // No additional engine.init() needed — templates are already written
+    // Write state file
     let state = INixState {
         version: env!("CARGO_PKG_VERSION").to_string(),
         hostname: hostname.clone(),
