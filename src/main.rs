@@ -182,10 +182,10 @@ async fn main() {
             doctor::run(&config_dir).await
         }
         Commands::Why { package } => {
-            why::run(&config_dir, &package).await
+            why::run(&package, cli.verbose).await
         }
         Commands::Edit { target } => {
-            edit::run(&config_dir, &target).await
+            edit::run(&target).await
         }
         Commands::Update { all } => {
             update::run(&config_dir, all, cli.verbose, cli.dry_run).await

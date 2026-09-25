@@ -1,6 +1,5 @@
 use anyhow::Result;
 use colored::Colorize;
-use std::fs;
 use std::path::Path;
 
 use crate::config::{INixMode, INixState};

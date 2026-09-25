@@ -2,7 +2,7 @@ use anyhow::Result;
 use colored::Colorize;
 use std::path::Path;
 
-use crate::config::{ConfigModel, INixState, InstallTarget};
+use crate::config::{INixState, InstallTarget};
 use crate::engine::NixEngine;
 
 pub async fn run(
