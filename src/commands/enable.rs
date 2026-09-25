@@ -163,3 +163,64 @@ fn print_known_options() {
     println!("  {}", "Use `i-nix enable --user <name>` for user programs".dimmed());
     println!();
 }
+
+/// Disable a previously enabled service or program.
+pub async fn disable(
+    config_dir: &str,
+    name: &str,
+    user: bool,
+    service: bool,
+    program: bool,
+    verbose: bool,
+    dry_run: bool,
+) -> Result<()> {
+    let config_path = Path::new(config_dir);
+    let state = INixState::load(config_path)?;
+
+    if state.version.is_empty() {
+        anyhow::bail!("i-nix not initialized. Run `i-nix init` first.");
+    }
+
+    let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+    let engine = NixEngine::new(config_path, &state.hostname, &username);
+
+    let module_path = if user {
+        if service {
+            anyhow::bail!("User-level services are not yet supported. Use --program instead.");
+        }
+        resolve_program_name(name)
+    } else {
+        if program {
+            resolve_program_name(name)
+        } else {
+            resolve_service_name(name)
+        }
+    };
+
+    if verbose {
+        eprintln!("  {} {} → {}", "Disable:".dimmed(), &name, &module_path);
+    }
+
+    if dry_run {
+        println!("{}", format!("Would disable: {}.enable = true;", module_path).red());
+        return Ok(());
+    }
+
+    let removed = engine.disable(&module_path, user)?;
+
+    if removed {
+        println!();
+        println!("{}", "✓".red().bold());
+        println!("  {} {}", "Disabled:".bold(), &name);
+        println!("  {} {}", "Module:".dimmed(), &module_path);
+        println!();
+        println!("  {}", "Run `i-nix apply` to activate.".dimmed());
+        println!();
+    } else {
+        println!();
+        println!("  {} {}", "⚠".yellow().bold(), format!("{} was not enabled — nothing to disable.", name));
+        println!();
+    }
+
+    Ok(())
+}

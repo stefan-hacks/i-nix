@@ -152,6 +152,22 @@ enum Commands {
         list: bool,
     },
 
+    /// Disable a service or program declaratively
+    Disable {
+        /// Service or program to disable (e.g. ssh, firefox, docker)
+        #[arg(required = true)]
+        name: String,
+        /// Disable as a user program instead of system service
+        #[arg(short, long)]
+        user: bool,
+        /// Treat as a service (default for system targets)
+        #[arg(long)]
+        service: bool,
+        /// Treat as a program
+        #[arg(long)]
+        program: bool,
+    },
+
     /// Update flake inputs and show available upgrades
     Update {
         /// Update all inputs without asking
@@ -253,6 +269,9 @@ async fn main() {
         }
         Commands::Enable { name, user, service, program, list } => {
             enable::run(&config_dir, name, user, service, program, list, cli.verbose, cli.dry_run).await
+        }
+        Commands::Disable { name, user, service, program } => {
+            enable::disable(&config_dir, &name, user, service, program, cli.verbose, cli.dry_run).await
         }
         Commands::Update { all } => {
             update::run(&config_dir, all, cli.verbose, cli.dry_run).await
