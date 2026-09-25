@@ -336,6 +336,58 @@ Recommendation:
 
 ---
 
+## Desktop Environments
+
+i-nix includes dedicated per-desktop directories under `users/<name>/desktop/`.
+
+### GNOME + nix-my-gnome
+
+**Always use the `-s` (split) flag** so nmg creates a well-organized directory instead of one monolithic file:
+
+```bash
+# Inside your flake directory
+cd users/lin/desktop
+
+# Generate GNOME settings with SPLIT mode
+dconf dump / | nix run github:stefan-hacks/nix-my-gnome -- -s -o ./gnome-settings
+```
+
+This produces:
+```text
+gnome-settings/
+  default.nix         # imports all category modules
+  shell-extensions.nix
+  gtk.nix             # themes, fonts, interface
+  mutter.nix          # window manager
+  window-manager.nix  # keybindings
+  input-devices.nix   # mouse, touchpad
+  notifications.nix
+  settings-daemon.nix
+  ...
+```
+
+Then uncomment in `users/lin/desktop/default.nix`:
+```nix
+{
+  imports = [ ./gnome-settings ];
+}
+```
+
+### Other DEs
+
+```nix
+# KDE Plasma
+imports = [ ./kde.nix ];
+
+# Hyprland
+imports = [ ./hyprland.nix ];
+
+# Sway
+imports = [ ./sway.nix ];
+```
+
+---
+
 ## How it Works
 
 ### No Regex
