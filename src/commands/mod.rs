@@ -14,5 +14,6 @@ pub mod remove;
 pub mod rollback;
 pub mod search;
 pub mod shell;
+pub mod sync;
 pub mod update;
 pub mod why;

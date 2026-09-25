@@ -182,7 +182,15 @@ enum Commands {
         live: bool,
     },
 
-    /// Update flake inputs and show available upgrades
+    /// Sync: detect manual changes and re-import into declarative config
+    Sync {
+        /// What to sync: packages, services, all (default: all)
+        #[arg(default_value = "all")]
+        target: String,
+        /// Auto-import without prompting
+        #[arg(short, long)]
+        yes: bool,
+    },
     Update {
         /// Update all inputs without asking
         #[arg(short, long)]
@@ -290,6 +298,9 @@ async fn main() {
         Commands::Desktop { subcommand, name, live } => {
             commands::desktop::run(&config_dir, Some(subcommand), Some(name), live, cli.verbose, cli.dry_run
             ).await
+        }
+        Commands::Sync { target, yes } => {
+            sync::run(&config_dir, yes, target == "packages", target == "services", cli.verbose, cli.dry_run).await
         }
         Commands::Update { all } => {
             update::run(&config_dir, all, cli.verbose, cli.dry_run).await
