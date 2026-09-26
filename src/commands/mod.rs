@@ -1,5 +1,6 @@
 pub mod adopt;
 pub mod apply;
+pub mod clean;
 pub mod container;
 pub mod desktop;
 pub mod dev;
@@ -7,9 +8,11 @@ pub mod diff;
 pub mod doctor;
 pub mod edit;
 pub mod enable;
+pub mod home;
 pub mod init;
 pub mod install;
 pub mod list;
+pub mod os;
 pub mod remove;
 pub mod rollback;
 pub mod search;

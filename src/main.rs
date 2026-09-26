@@ -7,9 +7,9 @@ mod config;
 mod desktop;
 mod engine;
 mod flake;
-mod home;
 mod nixast;
 mod nixos;
+mod style;
 mod tui;
 
 #[cfg(test)]
@@ -242,6 +242,42 @@ enum Commands {
         list: bool,
     },
 
+    /// NixOS system operations (nh os)
+    Os {
+        /// Subcommand: switch, boot, test, build, info, repl
+        subcommand: String,
+        /// Target hostname
+        #[arg(short = 'H', long)]
+        hostname: String,
+        /// Specialisation
+        #[arg(short, long)]
+        specialisation: Option<String>,
+        /// No specialisation
+        #[arg(long)]
+        no_specialisation: bool,
+    },
+
+    /// Home-manager operations (nh home)
+    Home {
+        /// Subcommand: switch, build, repl
+        subcommand: String,
+        /// Target user
+        #[arg(short, long)]
+        user: String,
+        /// Target hostname
+        #[arg(short = 'H', long)]
+        hostname: String,
+    },
+
+    /// Enhanced nix cleanup (nh clean)
+    Clean {
+        /// Subcommand: all, user, profile
+        subcommand: String,
+        /// Profile name (for profile subcommand)
+        #[arg(short, long)]
+        profile: Option<String>,
+    },
+
     /// Build and manage OCI container images
     Container {
         /// Action: build, run, push, list, load
@@ -330,6 +366,15 @@ async fn main() {
         }
         Commands::Dev { stack, name, list } => {
             dev::run(&stack, name, list).await
+        }
+        Commands::Os { subcommand, hostname, specialisation, no_specialisation } => {
+            os::run(&config_dir, &subcommand, &hostname, specialisation, no_specialisation, cli.dry_run, cli.verbose).await
+        }
+        Commands::Home { subcommand, user, hostname } => {
+            home::run(&config_dir, &subcommand, &user, &hostname, cli.dry_run, cli.verbose).await
+        }
+        Commands::Clean { subcommand, profile } => {
+            clean::run(&subcommand, profile, cli.dry_run, cli.verbose).await
         }
         Commands::Container { action, target, packages, tag, registry } => {
             container::run(&action, target, packages, tag, registry).await
