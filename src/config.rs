@@ -54,6 +54,7 @@ impl INixState {
 /// Represents a declarative intent — what the user wants installed/enabled.
 /// i-nix translates this into Nix AST modifications.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum Intent {
     InstallPackage {
         name: String,
@@ -90,6 +91,7 @@ pub struct ConfigModel {
     pub user_packages: Vec<String>,
     pub enabled_services: Vec<String>,
     pub enabled_programs: Vec<String>,
+    #[allow(dead_code)]
     pub custom_options: HashMap<String, serde_json::Value>,
 }
 
@@ -114,16 +116,19 @@ impl ConfigModel {
         Ok(model)
     }
 
+    #[allow(dead_code)]
     fn parse_system_config(&mut self, _content: &str) -> Result<()> {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn parse_home_config(&mut self, _content: &str) -> Result<()> {
         Ok(())
     }
 }
 
 /// Where generated Nix files live within the config dir.
+#[allow(dead_code)]
 pub fn flake_dir(config_dir: &Path) -> PathBuf {
     config_dir.join("flake")
 }
@@ -134,11 +139,13 @@ pub fn is_nixos() -> bool {
 }
 
 /// Check if nix command is available
+#[allow(dead_code)]
 pub fn has_nix() -> bool {
     which::which("nix").is_ok()
 }
 
 /// Check if home-manager is available
+#[allow(dead_code)]
 pub fn has_home_manager() -> bool {
     which::which("home-manager").is_ok()
 }

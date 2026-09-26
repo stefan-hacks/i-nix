@@ -28,7 +28,7 @@
             lockFile = ./Cargo.lock;
           };
           nativeBuildInputs = with pkgs; [ pkg-config installShellFiles ];
-          buildInputs = with pkgs; [ openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          buildInputs = with pkgs; [ openssl ] ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
             pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
           ];

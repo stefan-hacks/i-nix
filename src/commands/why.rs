@@ -2,7 +2,7 @@ use anyhow::Result;
 use colored::Colorize;
 use std::process::Command;
 
-pub async fn run(package: &str, verbose: bool) -> Result<()> {
+pub async fn run(package: &str, _verbose: bool) -> Result<()> {
     println!();
     println!("{}", format!("Why {}", package).bold());
     println!();

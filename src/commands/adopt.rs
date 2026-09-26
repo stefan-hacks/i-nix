@@ -3,7 +3,7 @@ use colored::Colorize;
 use std::path::Path;
 use tokio::process::Command;
 
-use crate::config::{ConfigModel, INixState, InstallTarget};
+use crate::config::{INixState, InstallTarget};
 use crate::engine::NixEngine;
 
 /// Discover current system state and generate declarative configuration.

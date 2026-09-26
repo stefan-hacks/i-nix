@@ -1,7 +1,7 @@
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::process::Command;
 
 /// Run a development shell (nix-shell or devShell) with the specified packages.

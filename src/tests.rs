@@ -112,7 +112,8 @@ mod tests {
             false,
         ).await;
 
-        let gnome_dir = Path::new(&config_dir).join("flake/users/user/desktop/gnome-settings");
+        let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+        let gnome_dir = Path::new(&config_dir).join(format!("flake/users/{}/desktop/gnome-settings", username));
         assert!(gnome_dir.exists());
         drop(temp);
     }
@@ -136,8 +137,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_dconf_parser_empty() {
-        let doc = crate::desktop::gnome::parse_dconf_dump("").unwrap();
-        assert!(doc.sections.is_empty());
+        let doc = crate::desktop::gnome::parse_dconf_dump("");
+        assert!(doc.is_empty());
     }
 
     #[tokio::test]
@@ -146,35 +147,39 @@ mod tests {
 clock-format='24h'
 
 "#;
-        let doc = crate::desktop::gnome::parse_dconf_dump(input).unwrap();
-        assert_eq!(doc.sections.len(), 1);
-        assert_eq!(doc.sections[0].path, "org/gnome/desktop/interface");
-        assert!(doc.sections[0].settings.contains_key("clock-format"));
+        let doc = crate::desktop::gnome::parse_dconf_dump(input);
+        assert_eq!(doc.len(), 1);
+        assert_eq!(doc[0].path, "org/gnome/desktop/interface");
+        let has_key = doc[0].settings.iter().any(|(k, _)| k == "clock-format");
+        assert!(has_key);
     }
 
     #[tokio::test]
     async fn test_dconf_parser_typed_value() {
         let input = "[org/gnome/mutter]\ncheck-alive-timeout=uint32 5000\n";
-        let doc = crate::desktop::gnome::parse_dconf_dump(input).unwrap();
-        assert_eq!(doc.sections.len(), 1);
-        assert!(doc.sections[0].settings.contains_key("check-alive-timeout"));
+        let doc = crate::desktop::gnome::parse_dconf_dump(input);
+        assert_eq!(doc.len(), 1);
+        let has_key = doc[0].settings.iter().any(|(k, _)| k == "check-alive-timeout");
+        assert!(has_key);
     }
 
     #[tokio::test]
     async fn test_dconf_parser_array() {
         let input = "[org/gnome/shell]\nfavorite-apps=['firefox.desktop', 'org.gnome.Nautilus.desktop']\n";
-        let doc = crate::desktop::gnome::parse_dconf_dump(input).unwrap();
-        assert_eq!(doc.sections.len(), 1);
-        let val = doc.sections[0].settings.get("favorite-apps").unwrap();
-        assert!(val.contains("firefox.desktop"));
+        let doc = crate::desktop::gnome::parse_dconf_dump(input);
+        assert_eq!(doc.len(), 1);
+        let val = doc[0].settings.iter().find(|(k, _)| k == "favorite-apps").map(|(_, v)| v);
+        assert!(val.is_some());
+        assert!(val.unwrap().contains("firefox.desktop"));
     }
 
     #[tokio::test]
     async fn test_dconf_parser_bool() {
         let input = "[org/gtk/settings/file-chooser]\nsort-directories-first=true\n";
-        let doc = crate::desktop::gnome::parse_dconf_dump(input).unwrap();
-        assert_eq!(doc.sections.len(), 1);
-        assert_eq!(doc.sections[0].settings.get("sort-directories-first"), Some(&"true".to_string()));
+        let doc = crate::desktop::gnome::parse_dconf_dump(input);
+        assert_eq!(doc.len(), 1);
+        let val = doc[0].settings.iter().find(|(k, _)| k == "sort-directories-first").map(|(_, v)| v);
+        assert_eq!(val, Some(&"true".to_string()));
     }
 
     #[tokio::test]

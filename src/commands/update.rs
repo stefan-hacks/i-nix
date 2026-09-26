@@ -5,7 +5,7 @@ use tokio::process::Command;
 
 use crate::config::INixState;
 
-pub async fn run(config_dir: &str, all: bool, verbose: bool, dry_run: bool) -> Result<()> {
+pub async fn run(config_dir: &str, all: bool, _verbose: bool, dry_run: bool) -> Result<()> {
     let config_path = Path::new(config_dir);
     let state = INixState::load(config_path)?;
 

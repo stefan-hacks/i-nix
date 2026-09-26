@@ -1,4 +1,5 @@
 use anyhow::Result;
+#[allow(unused_imports)]
 use colored::Colorize;
 use std::path::Path;
 use tokio::process::Command;

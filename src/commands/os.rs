@@ -11,8 +11,8 @@ pub async fn run(
     config_dir: &str,
     subcommand: &str,
     hostname: &str,
-    specialisation: Option<String>,
-    no_specialisation: bool,
+    _specialisation: Option<String>,
+    _no_specialisation: bool,
     dry_run: bool,
     verbose: bool,
 ) -> Result<()> {

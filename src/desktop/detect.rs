@@ -5,7 +5,6 @@ use colored::Colorize;
 use std::env;
 use std::fs;
 use std::path::Path;
-use tokio::process::Command;
 
 /// A desktop environment we can detect and generate config for.
 #[derive(Debug, Clone, PartialEq, Eq)]
