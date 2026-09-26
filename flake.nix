@@ -27,11 +27,14 @@
           cargoLock = {
             lockFile = ./Cargo.lock;
           };
-          nativeBuildInputs = with pkgs; [ pkg-config ];
+          nativeBuildInputs = with pkgs; [ pkg-config installShellFiles ];
           buildInputs = with pkgs; [ openssl ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             pkgs.darwin.apple_sdk.frameworks.Security
             pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
           ];
+          postInstall = ''
+            installManPage doc/i-nix.1
+          '';
           meta = with pkgs.lib; {
             description = "Imperative UX for declarative Nix/NixOS systems";
             homepage = "https://github.com/stefan-hacks/i-nix";

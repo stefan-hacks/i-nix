@@ -1,0 +1,301 @@
+.TH I-NIX 1 "2026-09-26" "i-nix 0.1.0" "User Commands"
+.SH NAME
+i-nix \- imperative UX for declarative Nix/NixOS systems
+.SH SYNOPSIS
+.B i-nix
+[\fB\-c\fR \fICONFIG\-DIR\fR] [\fB\-n\fR] [\fB\-v\fR] [\fBCOMMAND\fR] [\fIARGS\fR...]
+.SH DESCRIPTION
+.B i-nix
+is a UX layer that compiles imperative commands into declarative NixOS/Home Manager configuration. It is inspired by the workflow of
+.B nh
+(Yet Another Nix Helper) but implemented natively in Rust with zero external dependencies.
+.PP
+Every action you take becomes part of a clean, reproducible Nix configuration stored in
+.IR ~/.config/i-nix/flake/ .
+.SH OPTIONS
+.TP
+.BR \-c ", " \-\-config\-dir " " \fIDIR\fR
+Path to the i-nix configuration directory. Defaults to
+.IR ~/.config/i-nix .
+.TP
+.BR \-n ", " \-\-dry\-run
+Show what would be done without doing it.
+.TP
+.BR \-v ", " \-\-verbose
+Be verbose about what is happening.
+.TP
+.BR \-h ", " \-\-help
+Print help.
+.TP
+.BR \-V ", " \-\-version
+Print version.
+.SH COMMANDS
+.SS Core Commands
+.TP
+.BR init " [\fB\-\-hostname\fR \fIHOST\fR] [\fB\-\-user\fR|\fB\-\-system\fR]"
+Initialize a new i-nix flake.
+.TP
+.BR install " \fIPACKAGE\fR... [\fB\-\-user\fR] [\fB\-\-program\fR]"
+Install packages declaratively.
+.TP
+.BR remove " \fIPACKAGE\fR... [\fB\-\-user\fR]"
+Remove packages from configuration.
+.TP
+.BR list " [\fB\-\-user\fR|\fB\-\-system\fR]"
+List declaratively managed packages.
+.TP
+.BR search " \fIQUERY\fR [\fB\-\-limit\fR \fIN\fR] [\fB\-\-json\fR]"
+Search nixpkgs.
+.SS Services and Programs
+.TP
+.BR enable " \fISERVICE\fR|\fIPROGRAM\fR [\fB\-\-user\fR] [\fB\-\-program\fR]"
+Enable a service or program.
+.TP
+.BR disable " \fISERVICE\fR|\fIPROGRAM\fR [\fB\-\-user\fR]"
+Disable a service or program.
+.SS NixOS Operations (nh os)
+.TP
+.BR os " \fISUBCOMMAND\fR [\fB\-H\fR \fIHOSTNAME\fR]"
+NixOS system operations.
+.RS
+.TP
+.B switch
+Build and activate the new configuration, and make it the boot default.
+.TP
+.B boot
+Build the new configuration and make it the boot default.
+.TP
+.B test
+Build and activate the new configuration.
+.TP
+.B build
+Build the new configuration.
+.TP
+.B info
+List available generations from profile path.
+.TP
+.B repl
+Load system configuration in a Nix REPL.
+.RE
+.SS Home Manager Operations (nh home)
+.TP
+.BR home " \fISUBCOMMAND\fR [\fB\-u\fR \fIUSER\fR] [\fB\-H\fR \fIHOSTNAME\fR]"
+Home-manager operations.
+.RS
+.TP
+.B switch
+Build and activate a home-manager configuration.
+.TP
+.B build
+Build a home-manager configuration.
+.TP
+.B repl
+Load a home-manager configuration in a Nix REPL.
+.RE
+.SS Cleanup (nh clean)
+.TP
+.BR clean " \fISUBCOMMAND\fR"
+Enhanced nix cleanup.
+.RS
+.TP
+.B all
+Clean all profiles.
+.TP
+.B user
+Clean the current user's profiles.
+.TP
+.B profile
+Clean a specific profile.
+.RE
+.SS Desktop Environment
+.TP
+.BR desktop " \fISUBCOMMAND\fR"
+Manage desktop environments.
+.RS
+.TP
+.B detect
+Auto-detect the current desktop environment.
+.TP
+.B list
+List all supported desktop environments.
+.TP
+.B generate " \fIDE\fR"
+Generate declarative configuration for a desktop environment.
+.TP
+.B apply
+Wire the generated desktop configuration into the flake.
+.RE
+.SS Other Commands
+.TP
+.BR diff
+Show pending changes.
+.TP
+.BR apply " [\fB\-\-test\fR] [\fB\-\-remote\fR \fIHOST\fR]"
+Evaluate, build, and switch.
+.TP
+.BR rollback " [\fB\-i\fR|\fB\-g\fR \fIGEN\fR]"
+Rollback to a previous generation.
+.TP
+.BR update
+Update flake inputs.
+.TP
+.BR edit " [\fBpackages\fR|\fBservices\fR|\fBprograms\fR]"
+Open configuration in $EDITOR.
+.TP
+.BR why " \fIPACKAGE\fR"
+Show dependency chain.
+.TP
+.BR adopt " [\fB\-\-write\fR]"
+Discover current system state.
+.TP
+.BR doctor
+Diagnose Nix/NixOS health.
+.TP
+.BR sync " [\fB\-\-yes\fR]"
+Detect and re-import changes.
+.TP
+.BR shell " [\fIPACKAGE\fR...] [\fB\-\-flake\fR] [\fB\-\-list\fR]"
+Start a development shell.
+.TP
+.BR dev " [\fISTACK\fR] [\fINAME\fR] [\fB\-\-list\fR]"
+Scaffold a new Nix development project.
+.TP
+.BR container " \fIACTION\fR [\fITARGET\fR]"
+Build and manage OCI container images.
+.TP
+.BR tui
+Launch the interactive terminal UI.
+.SH FILES
+.TP
+.I ~/.config/i-nix/
+Configuration directory.
+.TP
+.I ~/.config/i-nix/flake/
+Generated Nix flake.
+.TP
+.I ~/.config/i-nix/flake/flake.nix
+Main flake file.
+.TP
+.I ~/.config/i-nix/flake/hosts/default.nix
+Multi-host registry.
+.TP
+.I ~/.config/i-nix/flake/systems/
+System configurations.
+.TP
+.I ~/.config/i-nix/flake/users/
+User configurations.
+.SH ENVIRONMENT
+.TP
+.B EDITOR
+Text editor used by the
+.B edit
+command.
+.TP
+.B HOME
+User's home directory.
+.TP
+.B USER
+Current username.
+.SH EXAMPLES
+Initialize a new system configuration:
+.PP
+.nf
+.RS
+i-nix init --hostname laptop --system
+.RE
+.fi
+.PP
+Install packages:
+.PP
+.nf
+.RS
+i-nix install firefox git vim
+i-nix install --user kitty neovim
+.RE
+.fi
+.PP
+Enable a service:
+.PP
+.nf
+.RS
+i-nix enable ssh
+i-nix enable --user kitty
+.RE
+.fi
+.PP
+Build and switch NixOS configuration:
+.PP
+.nf
+.RS
+i-nix os switch --hostname laptop
+.RE
+.fi
+.PP
+Build and switch Home Manager configuration:
+.PP
+.nf
+.RS
+i-nix home switch --user lin --hostname laptop
+.RE
+.fi
+.PP
+Clean up old generations:
+.PP
+.nf
+.RS
+i-nix clean all
+.RE
+.fi
+.PP
+Generate GNOME desktop configuration:
+.PP
+.nf
+.RS
+i-nix desktop generate gnome
+i-nix desktop apply
+.RE
+.fi
+.PP
+Rollback to a specific generation:
+.PP
+.nf
+.RS
+i-nix rollback -g 42
+.RE
+.fi
+.PP
+Run via nix:
+.PP
+.nf
+.RS
+nix run github:stefan-hacks/i-nix -- --help
+.RE
+.fi
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+General error.
+.TP
+.B 2
+Configuration error.
+.TP
+.B 3
+Build error.
+.SH AUTHORS
+Written by stefan-hacks.
+.SH REPORTING BUGS
+Report bugs at https://github.com/stefan-hacks/i-nix/issues
+.SH COPYRIGHT
+Copyright \(co 2026 stefan-hacks.
+.PP
+License MIT: The MIT License \fIhttps://opensource.org/licenses/MIT\fR.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+.BR nixos-rebuild (8),
+.BR home-manager (1),
+.BR nix (1)
