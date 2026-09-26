@@ -126,6 +126,7 @@ i-nix apply
 | `desktop list` | Show all supported DEs | `i-nix desktop list` |
 | `desktop apply` | Wire DE into flake | `i-nix desktop apply` |
 | `sync` | Detect & re-import changes | `i-nix sync --yes` |
+| `tui` | Launch interactive terminal UI | `i-nix tui` |
 
 ---
 
