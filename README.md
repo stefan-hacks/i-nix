@@ -2,7 +2,11 @@
 
 **Imperative UX for declarative Nix/NixOS systems.**
 
-> **Quick start:** `nix run github:stefan-hacks/i-nix -- init --hostname my-machine --system`
+> **Quick start (with flakes enabled):**
+> `nix run github:stefan-hacks/i-nix -- init --hostname my-machine --system`
+>
+> **Quick start (without flakes enabled):**
+> `nix run --extra-experimental-features 'nix-command flakes' github:stefan-hacks/i-nix -- init --hostname my-machine --system`
 
 ---
 
@@ -51,8 +55,16 @@ USER
 
 ### Via Nix (recommended)
 
+If you have flakes enabled in your `nix.conf`:
+
 ```bash
 nix run github:stefan-hacks/i-nix -- --help
+```
+
+If flakes are **not** enabled (default on many systems):
+
+```bash
+nix run --extra-experimental-features 'nix-command flakes' github:stefan-hacks/i-nix -- --help
 ```
 
 ### Build from source

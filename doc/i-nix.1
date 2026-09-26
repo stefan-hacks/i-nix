@@ -264,11 +264,19 @@ i-nix rollback -g 42
 .RE
 .fi
 .PP
-Run via nix:
+Run via nix (with flakes enabled):
 .PP
 .nf
 .RS
 nix run github:stefan-hacks/i-nix -- --help
+.RE
+.fi
+.PP
+Run via nix (without flakes enabled — add experimental features):
+.PP
+.nf
+.RS
+nix run --extra-experimental-features 'nix-command flakes' github:stefan-hacks/i-nix -- --help
 .RE
 .fi
 .SH EXIT STATUS
