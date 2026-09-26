@@ -10,6 +10,10 @@ mod flake;
 mod home;
 mod nixast;
 mod nixos;
+mod tui;
+
+#[cfg(test)]
+mod tests;
 
 use commands::*;
 
@@ -106,10 +110,23 @@ enum Commands {
         /// Build but don't switch (test the build)
         #[arg(long)]
         build: bool,
+        /// Test the configuration without making it the default boot
+        #[arg(long)]
+        test: bool,
+        /// Deploy to a remote NixOS host
+        #[arg(short, long)]
+        remote: Option<String>,
     },
 
     /// Rollback to the previous generation
-    Rollback,
+    Rollback {
+        /// Interactive generation selection
+        #[arg(short, long)]
+        interactive: bool,
+        /// Rollback to specific generation number
+        #[arg(short, long)]
+        generation: Option<u32>,
+    },
 
     /// Discover current system state and generate declarative config (adopt)
     Adopt {
@@ -241,6 +258,9 @@ enum Commands {
         #[arg(short, long)]
         registry: Option<String>,
     },
+
+    /// Launch interactive TUI
+    Tui,
 }
 
 #[tokio::main]
@@ -271,11 +291,11 @@ async fn main() {
         Commands::Diff => {
             diff::run(&config_dir).await
         }
-        Commands::Apply { yes, build } => {
-            apply::run(&config_dir, yes, build, cli.verbose, cli.dry_run).await
+        Commands::Apply { yes, build, test, remote } => {
+            apply::run(&config_dir, yes, build, test, remote, cli.verbose, cli.dry_run).await
         }
-        Commands::Rollback => {
-            rollback::run(&config_dir).await
+        Commands::Rollback { interactive, generation } => {
+            rollback::run(&config_dir, interactive, generation).await
         }
         Commands::Adopt { write } => {
             adopt::run(&config_dir, write, cli.verbose, cli.dry_run).await
@@ -313,6 +333,9 @@ async fn main() {
         }
         Commands::Container { action, target, packages, tag, registry } => {
             container::run(&action, target, packages, tag, registry).await
+        }
+        Commands::Tui => {
+            tui::run().await
         }
     };
 

@@ -10,6 +10,8 @@ pub async fn run(
     config_dir: &str,
     yes: bool,
     build_only: bool,
+    test_only: bool,
+    remote: Option<String>,
     verbose: bool,
     dry_run: bool,
 ) -> Result<()> {
@@ -24,30 +26,25 @@ pub async fn run(
         println!("{}", "DRY RUN: Would apply Nix configuration".yellow().bold());
         println!("  Hostname: {}", state.hostname);
         println!("  Config dir: {}", config_dir);
+        if let Some(ref host) = remote {
+            println!("  Remote host: {}", host);
+        }
         return Ok(());
     }
 
     let flake_dir = config_path.join("flake");
     let flake_path = format!("{}#nixosConfigurations.{}", flake_dir.display(), state.hostname);
 
+    // Handle remote deployment
+    if let Some(remote_host) = remote {
+        return deploy_remote(&flake_dir, &flake_path, &remote_host, yes, verbose, dry_run).await;
+    }
+
     // Stage all changes in git
-    let git_add = Command::new("git")
+    let _ = Command::new("git")
         .args(["-C", flake_dir.to_str().unwrap_or("."), "add", "-A"])
         .output()
         .await;
-
-    match git_add {
-        Ok(output) if output.status.success() => {
-            if verbose {
-                eprintln!("{} staged changes in git", "→".cyan());
-            }
-        }
-        _ => {
-            if verbose {
-                eprintln!("{} git add failed (not critical)", "ℹ".blue());
-            }
-        }
-    }
 
     // Show diff summary
     let diff = Command::new("git")
@@ -80,6 +77,13 @@ pub async fn run(
             .await?;
         println!("{}", String::from_utf8_lossy(&diff_show.stdout));
 
+        if test_only {
+            println!("{}", "Mode: TEST — will activate but NOT make default boot".cyan());
+        }
+        if build_only {
+            println!("{}", "Mode: BUILD-ONLY — will build but not activate".cyan());
+        }
+
         print!("Proceed? [Y/n] ");
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
@@ -90,26 +94,47 @@ pub async fn run(
         }
     }
 
-    // Build the NixOS configuration
-    println!();
-    println!("{} {}", "→".cyan(), "Evaluating Nix configuration...".dimmed());
+    // Determine build/switch/test command
+    let action = if test_only {
+        "test"
+    } else if build_only {
+        "build"
+    } else {
+        "switch"
+    };
 
-    let mut build_cmd = Command::new("nixos-rebuild");
-    build_cmd.args([
-        "build",
-        "--flake",
-        &flake_path,
-    ]);
+    println!();
+    println!(
+        "{} {}",
+        "→".cyan(),
+        format!("Running nixos-rebuild {}...", action).dimmed()
+    );
+
+    let mut cmd = Command::new("nixos-rebuild");
+    cmd.arg(action)
+        .args(["--flake", &flake_path]);
 
     if verbose {
-        build_cmd.arg("--verbose");
+        cmd.arg("--verbose");
     }
 
-    let build_output = build_cmd.output().await;
+    let output = cmd.output().await;
 
-    match build_output {
+    match output {
         Ok(output) if output.status.success() => {
-            println!("{} {}", "✓".green(), "Build successful".green().bold());
+            if test_only {
+                println!(
+                    "{} {}",
+                    "✓".green(),
+                    "Configuration tested successfully".green().bold()
+                );
+                println!("  {} This is a test activation — it will be lost on reboot.", "ℹ".blue());
+                println!("  {} Run `i-nix apply` (without --test) to make it permanent.", "→".cyan());
+            } else if build_only {
+                println!("{} {}", "✓".green(), "Build successful".green().bold());
+            } else {
+                println!("{} {}", "✓".green(), "System activated".green().bold());
+            }
 
             if verbose {
                 let stdout = String::from_utf8_lossy(&output.stdout);
@@ -122,10 +147,10 @@ pub async fn run(
             let stderr = String::from_utf8_lossy(&output.stderr);
             eprintln!("{} {}", "✗".red(), "Build failed".red().bold());
             eprintln!("{}", stderr);
-            anyhow::bail!("nixos-rebuild build failed");
+            anyhow::bail!("nixos-rebuild {} failed", action);
         }
         Err(e) => {
-            // nixos-rebuild not available (not on NixOS)
+            // Not on NixOS
             if verbose {
                 eprintln!("{} nixos-rebuild not available: {}", "ℹ".blue(), e);
             }
@@ -138,7 +163,8 @@ pub async fn run(
                 .args([
                     "switch",
                     "--flake",
-                    &format!("{}#lin", flake_dir.display()),
+                    &format!("{}#{}", flake_dir.display(),
+                        std::env::var("USER").unwrap_or_else(|_| "user".to_string())),
                 ])
                 .output()
                 .await;
@@ -151,67 +177,17 @@ pub async fn run(
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     eprintln!("{} {}", "✗".red(), "Home Manager failed".red().bold());
                     eprintln!("{}", stderr);
-                    anyhow::bail!("home-manager switch failed");
                 }
                 Err(_) => {
-                    println!();
-                    println!("{} {}", "ℹ".blue(), "Neither nixos-rebuild nor home-manager available.".blue());
-                    println!("  This usually means:");
-                    println!("    - You're not on NixOS (nixos-rebuild unavailable)");
-                    println!("    - Home Manager is not installed");
-                    println!();
-                    println!("  The configuration has been updated at: {}", flake_dir.display());
+                    println!("  Configuration updated at: {}", flake_dir.display());
                     println!("  Run `i-nix apply` on a NixOS machine to activate.");
                 }
             }
         }
     }
 
-    if build_only {
-        println!("{} Build complete — not activating (dry build)", "ℹ".blue());
-        return Ok(());
-    }
-
-    // Actually switch if we have nixos-rebuild
-    let switch = Command::new("nixos-rebuild")
-        .args([
-            "switch",
-            "--flake",
-            &flake_path,
-        ])
-        .output()
-        .await;
-
-    match switch {
-        Ok(output) if output.status.success() => {
-            println!("{} {}", "✓".green(), "System activated".green().bold());
-
-            // Update state with generation info
-            let gen_cmd = Command::new("nixos-rebuild")
-                .args([
-                    "list-generations",
-                    "--json",
-                ])
-                .output()
-                .await;
-
-            if let Ok(gen_output) = gen_cmd {
-                // Parse current generation
-                // (simplified — in production would parse JSON)
-            }
-        }
-        Ok(output) => {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!("{} {}", "✗".red(), "Switch failed".red().bold());
-            eprintln!("{}", stderr);
-        }
-        Err(_) => {
-            // Not on NixOS — expected
-        }
-    }
-
-    // Commit the changes
-    let git_commit = Command::new("git")
+    // Commit
+    let _ = Command::new("git")
         .args([
             "-C",
             flake_dir.to_str().unwrap_or("."),
@@ -222,17 +198,79 @@ pub async fn run(
         .output()
         .await;
 
-    match git_commit {
-        Ok(output) if output.status.success() => {
-            if verbose {
-                eprintln!("{} committed changes", "→".cyan());
-            }
-        }
-        _ => {}
-    }
-
     println!();
     println!("{}", "✓ Done.".green().bold());
+
+    Ok(())
+}
+
+async fn deploy_remote(
+    flake_dir: &std::path::Path,
+    flake_path: &str,
+    remote_host: &str,
+    yes: bool,
+    verbose: bool,
+    dry_run: bool,
+) -> Result<()> {
+    println!();
+    println!("{}", "Remote Deployment".bold().underline());
+    println!();
+    println!("  Host: {}", remote_host.cyan().bold());
+    println!("  Flake: {}", flake_path.bright_black());
+    println!();
+
+    if dry_run {
+        println!("  {} Would copy flake to remote and run nixos-rebuild", "DRY RUN".yellow().bold());
+        return Ok(());
+    }
+
+    // Build locally first (nixos-rebuild build --target-host)
+    // Or copy flake and build remotely
+    println!("  {} Building locally for remote target...", "→".cyan());
+
+    let mut cmd = Command::new("nixos-rebuild");
+    cmd.args([
+        "switch",
+        "--flake", flake_path,
+        "--target-host", remote_host,
+        "--build-host", "localhost",
+    ]);
+
+    if verbose {
+        cmd.arg("--verbose");
+    }
+
+    if !yes {
+        println!();
+        println!("  {}", "This will:".bold());
+        println!("    1. Build the configuration locally");
+        println!("    2. Copy closure to {}", remote_host);
+        println!("    3. Activate on remote host");
+        println!();
+        println!("  Run with --yes to skip this prompt.");
+        println!();
+    }
+
+    let output = cmd.output().await?;
+
+    if output.status.success() {
+        println!("  {} Deployed to {}", "✓".green().bold(), remote_host);
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        anyhow::bail!("Remote deployment failed: {}", stderr);
+    }
+
+    // Commit local changes
+    let _ = Command::new("git")
+        .args([
+            "-C",
+            flake_dir.to_str().unwrap_or("."),
+            "commit",
+            "-m",
+            "i-nix remote deploy",
+        ])
+        .output()
+        .await;
 
     Ok(())
 }

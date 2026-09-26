@@ -72,8 +72,8 @@ pub async fn run(config_dir: &str) -> Result<()> {
         }
 
         // Check generations
-        let gens = count_generations().await;
-        match gens {
+        let generations = count_generations().await;
+        match generations {
             Ok(n) => println!("  {} {} generations available", "✓".green(), n),
             Err(_) => println!("  {} could not count generations", "?".dimmed()),
         }
