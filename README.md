@@ -2,15 +2,13 @@
 
 **Imperative UX for declarative Nix/NixOS systems.**
 
-> Imperative commands. Declarative systems.
-
-Use NixOS like a traditional Linux distribution (`apt install`, `dnf install`, `pacman -S`) — but every action automatically becomes part of a clean, reproducible Nix configuration stored in `$HOME/.config/i-nix/flake/`.
-
----
+> **Quick start:** `nix run github:stefan-hacks/i-nix -- init --hostname my-machine --system`
 
 ## What is i-nix?
 
-`i-nix` is **not** another package manager. It is a **UX layer** that compiles imperative commands into declarative NixOS/Home Manager configuration.
+`i-nix` is **not** another package manager. It is a **UX layer** that compiles imperative commands into declarative NixOS/Home Manager configuration — inspired by the beautiful workflow of `nh` (Yet Another Nix Helper) but implemented natively in Rust with no external dependencies.
+
+**Key principle:** Every action you take becomes part of a clean, reproducible Nix configuration stored in `$HOME/.config/i-nix/flake/`.
 
 ```text
 USER
@@ -487,10 +485,11 @@ sudo cp target/release/i-nix /usr/local/bin/
 - [x] `shell`, `dev`, `container`
 - [x] Multi-host support
 - [x] Profile bundles
-- [x] Desktop environment integration
-- [ ] `i-nix sync` — detect manual edits and sync state
-- [ ] `i-nix template` — shareable configuration templates
-- [ ] `i-nix remote` — deploy to remote NixOS machines
+- [x] `os` (switch, boot, test, build, info) — nh-style NixOS operations
+- [x] `home` (switch, build, repl) — Home Manager operations
+- [x] `clean` (all, user, profile) — Enhanced garbage collection
+- [x] `sync` — detect manual edits and sync state
+- [ ] `template` — shareable configuration templates
 - [ ] Web UI for browsing/searching packages
 
 ---
