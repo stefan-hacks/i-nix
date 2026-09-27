@@ -14,7 +14,7 @@
 
 `i-nix` is **not** another package manager. It is a **UX layer** that compiles imperative commands into declarative NixOS/Home Manager configuration — inspired by my tool `pdrx` (Portable Declarative Linux) and the workflow of `nh` (Yet Another Nix Helper) but implemented natively in Rust with zero external dependencies.
 
-**Key principle:** Every action you take becomes part of a clean, reproducible Nix configuration stored in `~/.config/i-nix/flake/`.
+**Key principle:** Every action you take becomes part of a clean, reproducible Nix configuration stored in `~/.config/i-nix/`.
 
 ```text
 USER
@@ -163,7 +163,7 @@ sudo cp target/release/i-nix /usr/local/bin/
 ## Configuration Structure
 
 ```text
-~/.config/i-nix/flake/
+~/.config/i-nix/
 ├── flake.nix              # Entry point
 ├── flake.lock             # Pin inputs
 ├── hosts/

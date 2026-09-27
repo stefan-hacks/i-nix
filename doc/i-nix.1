@@ -11,7 +11,7 @@ is a UX layer that compiles imperative commands into declarative NixOS/Home Mana
 (Yet Another Nix Helper) but implemented natively in Rust with zero external dependencies.
 .PP
 Every action you take becomes part of a clean, reproducible Nix configuration stored in
-.IR ~/.config/i-nix/flake/ .
+.IR ~/.config/i-nix/ .
 .SH OPTIONS
 .TP
 .BR \-c ", " \-\-config\-dir " " \fIDIR\fR
@@ -170,19 +170,19 @@ Launch the interactive terminal UI.
 .I ~/.config/i-nix/
 Configuration directory.
 .TP
-.I ~/.config/i-nix/flake/
+.I ~/.config/i-nix/
 Generated Nix flake.
 .TP
-.I ~/.config/i-nix/flake/flake.nix
+.I ~/.config/i-nix/flake.nix
 Main flake file.
 .TP
-.I ~/.config/i-nix/flake/hosts/default.nix
+.I ~/.config/i-nix/hosts/default.nix
 Multi-host registry.
 .TP
-.I ~/.config/i-nix/flake/systems/
+.I ~/.config/i-nix/systems/
 System configurations.
 .TP
-.I ~/.config/i-nix/flake/users/
+.I ~/.config/i-nix/users/
 User configurations.
 .SH ENVIRONMENT
 .TP
