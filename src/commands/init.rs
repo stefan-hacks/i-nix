@@ -15,7 +15,7 @@ pub async fn run(
 ) -> Result<()> {
     let config_path = Path::new(config_dir);
     
-    if config_path.join("flake/flake.nix").exists() {
+    if config_path.join("flake.nix").exists() {
         anyhow::bail!(
             "i-nix configuration already exists at {}.\nUse `i-nix apply` to apply changes, or remove the directory to reinitialize.",
             config_dir
@@ -61,7 +61,7 @@ pub async fn run(
         last_applied_generation: None,
         last_applied_time: None,
         mode,
-        flake_path: config_path.join("flake"),
+        flake_path: config_path.to_path_buf(),
         has_home_manager: with_home_manager,
     };
     state.save(config_path)?;
@@ -69,7 +69,7 @@ pub async fn run(
     // Initialize git repo
     let git_init = std::process::Command::new("git")
         .arg("init")
-        .current_dir(config_path.join("flake"))
+        .current_dir(config_path.to_path_buf())
         .output();
     
     if let Ok(output) = git_init {
@@ -81,12 +81,12 @@ pub async fn run(
     // Add and commit initial files
     let _ = std::process::Command::new("git")
         .args(["add", "-A"])
-        .current_dir(config_path.join("flake"))
+        .current_dir(config_path.to_path_buf())
         .output();
     
     let _ = std::process::Command::new("git")
         .args(["commit", "-m", "Initial i-nix configuration"])
-        .current_dir(config_path.join("flake"))
+        .current_dir(config_path.to_path_buf())
         .output();
 
     println!();

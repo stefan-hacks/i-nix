@@ -238,7 +238,7 @@ async fn scan_enabled_services() -> HashSet<String> {
 }
 
 async fn read_declared_system_packages(config_path: &Path) -> Result<HashSet<String>> {
-    let pkg_file = config_path.join("flake/systems/default.nix");
+    let pkg_file = config_path.join("systems/default.nix");
     if !pkg_file.exists() {
         return Ok(HashSet::new());
     }
@@ -249,7 +249,7 @@ async fn read_declared_system_packages(config_path: &Path) -> Result<HashSet<Str
 }
 
 async fn read_declared_user_packages(config_path: &Path, username: &str) -> Result<HashSet<String>> {
-    let pkg_file = config_path.join(format!("flake/users/{}/packages/default.nix", username));
+    let pkg_file = config_path.join(format!("users/{}/packages/default.nix", username));
     if !pkg_file.exists() {
         return Ok(HashSet::new());
     }
@@ -260,7 +260,7 @@ async fn read_declared_user_packages(config_path: &Path, username: &str) -> Resu
 }
 
 async fn read_declared_services(config_path: &Path) -> Result<HashSet<String>> {
-    let svc_file = config_path.join("flake/systems/default.nix");
+    let svc_file = config_path.join("systems/default.nix");
     if !svc_file.exists() {
         return Ok(HashSet::new());
     }
@@ -286,8 +286,8 @@ async fn scan_changed_configs(config_path: &Path) -> Vec<std::path::PathBuf> {
 
     // Files commonly managed outside i-nix that should be in the flake
     let tracked_files = [
-        config_path.join("flake/systems/default.nix"),
-        config_path.join("flake/home/default.nix"),
+        config_path.join("systems/default.nix"),
+        config_path.join("home/default.nix"),
     ];
 
     for file in &tracked_files {
@@ -295,7 +295,7 @@ async fn scan_changed_configs(config_path: &Path) -> Vec<std::path::PathBuf> {
             // Check if there are uncommitted changes
             if let Ok(out) = tokio::process::Command::new("git")
                 .args(["diff", "--quiet", file.to_str().unwrap_or("")])
-                .current_dir(config_path.join("flake"))
+                .current_dir(config_path)
                 .output()
                 .await
             {

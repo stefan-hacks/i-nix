@@ -32,8 +32,8 @@ pub async fn run(
         return Ok(());
     }
 
-    let flake_dir = config_path.join("flake");
-    let flake_path = format!("{}#nixosConfigurations.{}", flake_dir.display(), state.hostname);
+    let flake_dir = config_path;
+    let flake_path = format!("{}#nixosConfigurations.{}", config_path.display(), state.hostname);
 
     // Handle remote deployment
     if let Some(remote_host) = remote {
@@ -163,7 +163,7 @@ pub async fn run(
                 .args([
                     "switch",
                     "--flake",
-                    &format!("{}#{}", flake_dir.display(),
+                    &format!("{}#{}", config_path.display(),
                         std::env::var("USER").unwrap_or_else(|_| "user".to_string())),
                 ])
                 .output()
@@ -179,7 +179,7 @@ pub async fn run(
                     eprintln!("{}", stderr);
                 }
                 Err(_) => {
-                    println!("  Configuration updated at: {}", flake_dir.display());
+                    println!("  Configuration updated at: {}", config_path.display());
                     println!("  Run `i-nix apply` on a NixOS machine to activate.");
                 }
             }

@@ -51,7 +51,7 @@ pub async fn generate_de(
 //  GNOME (from template)
 // ──────────────────────────
 async fn generate_gnome_template(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let content = format!(
@@ -148,7 +148,7 @@ async fn generate_gnome_template(config_dir: &Path, user: &str) -> Result<()> {
 //  KDE PLASMA
 // ──────────────────────────
 async fn generate_kde(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -200,7 +200,7 @@ async fn generate_kde(config_dir: &Path, user: &str) -> Result<()> {
 //  HYPRLAND
 // ──────────────────────────
 async fn generate_hyprland(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -322,7 +322,7 @@ async fn generate_hyprland(config_dir: &Path, user: &str) -> Result<()> {
 //  SWAY
 // ──────────────────────────
 async fn generate_sway(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -386,7 +386,7 @@ async fn generate_sway(config_dir: &Path, user: &str) -> Result<()> {
 //  i3
 // ──────────────────────────
 async fn generate_i3(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -450,7 +450,7 @@ async fn generate_i3(config_dir: &Path, user: &str) -> Result<()> {
 //  NIRI
 // ──────────────────────────
 async fn generate_niri(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -518,7 +518,7 @@ async fn generate_niri(config_dir: &Path, user: &str) -> Result<()> {
 //  CINNAMON
 // ──────────────────────────
 async fn generate_cinnamon(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -566,7 +566,7 @@ async fn generate_cinnamon(config_dir: &Path, user: &str) -> Result<()> {
 //  XFCE
 // ──────────────────────────
 async fn generate_xfce(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -614,7 +614,7 @@ async fn generate_xfce(config_dir: &Path, user: &str) -> Result<()> {
 //  POP!_OS COSMIC
 // ──────────────────────────
 async fn generate_popos(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -668,7 +668,7 @@ async fn generate_popos(config_dir: &Path, user: &str) -> Result<()> {
 //  QUICKSHELL
 // ──────────────────────────
 async fn generate_quickshell(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -720,7 +720,7 @@ async fn generate_quickshell(config_dir: &Path, user: &str) -> Result<()> {
 //  NOCTALIA
 // ──────────────────────────
 async fn generate_noctalia(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -790,7 +790,7 @@ async fn generate_noctalia(config_dir: &Path, user: &str) -> Result<()> {
 //  DANKLINUX
 // ──────────────────────────
 async fn generate_danklinux(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(
@@ -855,7 +855,7 @@ async fn generate_danklinux(config_dir: &Path, user: &str) -> Result<()> {
 //  GENERIC / UNKNOWN
 // ──────────────────────────
 async fn generate_generic_template(config_dir: &Path, user: &str, name: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
     tokio::fs::create_dir_all(&desktop_dir).await?;
 
     let default_nix = format!(

@@ -7,9 +7,9 @@ pub async fn run(target: &str) -> Result<()> {
     let editor = env::var("EDITOR").unwrap_or_else(|_| "nano".to_string());
 
     let path = match target {
-        "packages" | "pkg" | "system" => "~/.config/i-nix/flake/systems/default.nix",
-        "home" | "user" => "~/.config/i-nix/flake/home/default.nix",
-        "flake" | "nix" => "~/.config/i-nix/flake/flake.nix",
+        "packages" | "pkg" | "system" => "~/.config/i-nix/systems/default.nix",
+        "home" | "user" => "~/.config/i-nix/home/default.nix",
+        "flake" | "nix" => "~/.config/i-nix/flake.nix",
         _ => target,
     };
 

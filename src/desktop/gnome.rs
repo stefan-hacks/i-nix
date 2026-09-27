@@ -299,7 +299,7 @@ pub fn generate_split(dconf_input: &str) -> BTreeMap<String, String> {
 
 /// Generate GNOME config from live dconf or provided text.
 pub async fn generate_from_dconf(config_dir: &Path, user: &str) -> Result<()> {
-    let desktop_dir = config_dir.join(format!("flake/users/{}/desktop", user));
+    let desktop_dir = config_dir.join(format!("users/{}/desktop", user));
 
     // Try to read live dconf dump
     let dconf_text = tokio::process::Command::new("dconf")

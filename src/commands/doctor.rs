@@ -118,7 +118,7 @@ pub async fn run(config_dir: &str) -> Result<()> {
         }
 
         // Check flake.nix is valid
-        let flake_file = config_path.join("flake/flake.nix");
+        let flake_file = config_path.join("flake.nix");
         if flake_file.exists() {
             let eval = check_flake_eval(&flake_file).await;
             match eval {
@@ -135,7 +135,7 @@ pub async fn run(config_dir: &str) -> Result<()> {
         }
 
         // Check git repo
-        let git_dir = config_path.join("flake/.git");
+        let git_dir = config_path.join(".git");
         if git_dir.exists() {
             println!("  {} git repository tracking", "✓".green());
         } else {

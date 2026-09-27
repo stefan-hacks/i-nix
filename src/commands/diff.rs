@@ -13,7 +13,7 @@ pub async fn run(config_dir: &str) -> Result<()> {
         anyhow::bail!("i-nix not initialized. Run `i-nix init` first.");
     }
 
-    let flake_dir = config_path.join("flake");
+    let flake_dir = config_path;
 
     println!();
     println!("{}", "i-nix diff".bold().underline());

@@ -25,8 +25,8 @@ pub async fn run(package: &str, _verbose: bool) -> Result<()> {
             println!("  nix why-depends not available (not on NixOS or package not in closure).");
             println!();
             println!("  To see where a package is declared, check:");
-            println!("    {} ~/.config/i-nix/flake/systems/default.nix", "→".cyan());
-            println!("    {} ~/.config/i-nix/flake/home/default.nix", "→".cyan());
+            println!("    {} ~/.config/i-nix/systems/default.nix", "→".cyan());
+            println!("    {} ~/.config/i-nix/home/default.nix", "→".cyan());
         }
     }
 

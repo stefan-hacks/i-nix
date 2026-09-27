@@ -130,7 +130,7 @@ impl ConfigModel {
 /// Where generated Nix files live within the config dir.
 #[allow(dead_code)]
 pub fn flake_dir(config_dir: &Path) -> PathBuf {
-    config_dir.join("flake")
+    config_dir.to_path_buf()
 }
 
 /// Check if we're on NixOS

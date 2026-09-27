@@ -102,7 +102,7 @@ async fn apply_de(
 
     let engine = NixEngine::new(config_path, hostname, username);
 
-    let desktop_dir = config_path.join(format!("flake/users/{}/desktop", username));
+    let desktop_dir = config_path.join(format!("users/{}/desktop", username));
     let default_nix = desktop_dir.join("default.nix");
 
     if !default_nix.exists() {

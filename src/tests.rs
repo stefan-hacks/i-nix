@@ -24,7 +24,7 @@ mod tests {
     #[tokio::test]
     async fn test_init_creates_flake() {
         let (temp, config_dir) = setup_test_flake().await;
-        let flake_path = Path::new(&config_dir).join("flake/flake.nix");
+        let flake_path = Path::new(&config_dir).join("flake.nix");
         assert!(flake_path.exists());
         drop(temp);
     }
@@ -43,7 +43,7 @@ mod tests {
             false,
         ).await;
 
-        let systems_nix = Path::new(&config_dir).join("flake/systems/test-host/default.nix");
+        let systems_nix = Path::new(&config_dir).join("systems/test-host/default.nix");
         let content = std::fs::read_to_string(systems_nix).unwrap();
         assert!(content.contains("firefox"));
         drop(temp);
@@ -72,7 +72,7 @@ mod tests {
             false,
         ).await;
 
-        let systems_nix = Path::new(&config_dir).join("flake/systems/test-host/default.nix");
+        let systems_nix = Path::new(&config_dir).join("systems/test-host/default.nix");
         let content = std::fs::read_to_string(systems_nix).unwrap();
         assert!(!content.contains("vim"));
         drop(temp);
@@ -93,7 +93,7 @@ mod tests {
             false,
         ).await;
 
-        let systems_nix = Path::new(&config_dir).join("flake/systems/test-host/default.nix");
+        let systems_nix = Path::new(&config_dir).join("systems/test-host/default.nix");
         let content = std::fs::read_to_string(systems_nix).unwrap();
         assert!(content.contains("services.openssh.enable = true"));
         drop(temp);
@@ -113,7 +113,7 @@ mod tests {
         ).await;
 
         let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
-        let gnome_dir = Path::new(&config_dir).join(format!("flake/users/{}/desktop/gnome-settings", username));
+        let gnome_dir = Path::new(&config_dir).join(format!("users/{}/desktop/gnome-settings", username));
         assert!(gnome_dir.exists());
         drop(temp);
     }

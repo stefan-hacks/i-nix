@@ -18,7 +18,7 @@ pub async fn run(config_dir: &str, all: bool, _verbose: bool, dry_run: bool) -> 
         return Ok(());
     }
 
-    let flake_dir = config_path.join("flake");
+    let flake_dir = config_path;
 
     println!();
     println!("{}", "Updating flake inputs...".bold());
@@ -26,7 +26,7 @@ pub async fn run(config_dir: &str, all: bool, _verbose: bool, dry_run: bool) -> 
 
     let update = Command::new("nix")
         .args([
-            "flake",
+            "--flake",
             "update",
             "--flake",
             flake_dir.to_str().unwrap_or("."),

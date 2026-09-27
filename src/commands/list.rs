@@ -18,7 +18,7 @@ pub async fn run(
 
     let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
     let model = ConfigModel::from_flake(
-        &config_path.join("flake"),
+        &config_path,
         &state.hostname,
         &username,
     )?;
