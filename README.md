@@ -67,6 +67,62 @@ If flakes are **not** enabled (default on many systems):
 nix run --extra-experimental-features 'nix-command flakes' github:stefan-hacks/i-nix -- --help
 ```
 
+### Add to your flake permanently
+
+If you already have a NixOS or Home Manager flake, add `i-nix` as an input and wire it into your packages:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    i-nix = {
+      url = "github:stefan-hacks/i-nix";
+      # Optional: keep inputs in sync
+      # inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { self, nixpkgs, i-nix, ... }@inputs: {
+    # Example: NixOS system configuration
+    nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+      modules = [ ./configuration.nix ];
+    };
+  };
+}
+```
+
+Then in `configuration.nix` (system-wide) or `home.nix` (user only):
+
+```nix
+{ pkgs, inputs, ... }:
+
+{
+  # System-wide
+  environment.systemPackages = [ inputs.i-nix.packages.${pkgs.system}.default ];
+
+  # Or, user-only via Home Manager
+  # home.packages = [ inputs.i-nix.packages.${pkgs.system}.default ];
+}
+```
+
+After rebuilding, `i-nix` is permanently available on the system.
+
+### Shell alias
+
+For faster typing, add this alias to your shell's rc file:
+
+| Shell | File | Alias |
+|---|---|---|
+| Bash | `~/.bashrc` | `alias i='i-nix'` |
+| Zsh | `~/.zshrc` | `alias i='i-nix'` |
+| Fish | `~/.config/fish/config.fish` | `abbr --add i i-nix` |
+| Nushell | `$nu.config-path` | `alias i = i-nix` |
+
+> **Tip:** If you use Home Manager, declare the alias declaratively instead of editing rc files by hand. For example, with `programs.zsh.shellAliases.i = "i-nix";`.
+
 ### Build from source
 
 ```bash
