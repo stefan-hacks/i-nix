@@ -196,6 +196,66 @@ User's home directory.
 .TP
 .B USER
 Current username.
+.SH INSTALLATION
+.SS Via Nix (flakes enabled)
+.PP
+.nf
+.RS
+nix run github:stefan-hacks/i-nix -- --help
+.RE
+.fi
+.PP
+.SS Via Nix (no flakes)
+.PP
+.nf
+.RS
+nix run --extra-experimental-features 'nix-command flakes' github:stefan-hacks/i-nix -- --help
+.RE
+.fi
+.PP
+.SS Add to your flake permanently
+Add
+.B i-nix
+as a flake input and wire it into your packages:
+.PP
+.nf
+.RS
+# In flake.nix inputs
+i-nix.url = "github:stefan-hacks/i-nix";
+# Optional: inputs.nixpkgs.follows = "nixpkgs";
+
+# In configuration.nix (system-wide)
+environment.systemPackages = [ inputs.i-nix.packages.${pkgs.system}.default ];
+
+# Or via Home Manager (user-only)
+# home.packages = [ inputs.i-nix.packages.${pkgs.system}.default ];
+.RE
+.fi
+.PP
+.SS Shell alias
+For faster typing, add an alias to your shell's rc file:
+.PP
+.nf
+.RS
+# Bash (~/.bashrc) or Zsh (~/.zshrc)
+alias i='i-nix'
+
+# Fish (~/.config/fish/config.fish)
+abbr --add i i-nix
+
+# Nushell ($nu.config-path)
+alias i = i-nix
+.RE
+.fi
+.PP
+If you use Home Manager, declare the alias declaratively instead:
+.PP
+.nf
+.RS
+programs.zsh.shellAliases.i = "i-nix";
+.RE
+.fi
+.PP
 .SH EXAMPLES
 Initialize a new system configuration:
 .PP
