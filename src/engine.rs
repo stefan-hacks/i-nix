@@ -198,17 +198,11 @@ impl<'a> NixEngine<'a> {
         // ── systems/_common.nix (shared base across ALL hosts) ──
         let common_nix = r#"# i-nix common system base
 # Shared across ALL hosts. Host-specific overrides go in systems/<host>/.
+# Host-specific hardware and boot settings go in systems/<host>/hardware.nix
 
 { config, pkgs, lib, ... }:
 
 {
-  # ── Boot ──
-  # Boot loader is typically declared in hardware-configuration.nix.
-  # Uncomment one of these if your hardware config does not set it:
-  # boot.loader.systemd-boot.enable = true;
-  # boot.loader.efi.canTouchEfiVariables = true;
-  # boot.loader.grub.device = "/dev/sda";
-
   # ── Locale ──
   time.timeZone = "UTC";
   i18n.defaultLocale = "en_US.UTF-8";
@@ -261,8 +255,7 @@ impl<'a> NixEngine<'a> {
   # Use: i-nix enable firefox
 
   # ── Filesystems ──
-  # Configure after disk partitioning:
-  # fileSystems."/" = {{ device = "/dev/disk/by-label/nixos"; fsType = "ext4"; }};
+  # Host-specific filesystems are declared in hardware.nix (imported above).
 
   # ── Profiles ──
   # Import feature bundles:

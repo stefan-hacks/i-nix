@@ -60,14 +60,17 @@ mod tests {
         assert!(hw_content.contains("fileSystems.\"/\""), "hardware.nix must contain placeholder root filesystem");
         assert!(hw_content.contains("boot.loader"), "hardware.nix must contain placeholder bootloader");
 
-        // _common.nix boot loader is commented out (user must configure via hardware.nix)
+        // _common.nix must NOT set boot loader or filesystems (those belong in hardware.nix)
         let common_nix = Path::new(&config_dir).join("systems/_common.nix");
         let common_content = std::fs::read_to_string(common_nix).unwrap();
         assert!(
-            !common_content.lines().any(|l| l.trim_start() == "boot.loader.systemd-boot.enable = true;"),
-            "_common.nix must NOT set boot loader (should be in hardware.nix)"
+            !common_content.contains("boot.loader"),
+            "_common.nix must NOT contain boot.loader (belongs in hardware.nix)"
         );
-        assert!(common_content.contains("# boot.loader.systemd-boot.enable = true;"), "_common.nix should have commented boot loader");
+        assert!(
+            !common_content.contains("fileSystems"),
+            "_common.nix must NOT contain fileSystems (belongs in hardware.nix)"
+        );
 
         drop(temp);
     }
