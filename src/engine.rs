@@ -203,8 +203,11 @@ impl<'a> NixEngine<'a> {
 
 {
   # ── Boot ──
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # Boot loader is typically declared in hardware-configuration.nix.
+  # Uncomment one of these if your hardware config does not set it:
+  # boot.loader.systemd-boot.enable = true;
+  # boot.loader.efi.canTouchEfiVariables = true;
+  # boot.loader.grub.device = "/dev/sda";
 
   # ── Locale ──
   time.timeZone = "UTC";
@@ -230,6 +233,11 @@ impl<'a> NixEngine<'a> {
 {{
   # ── Host identity ──
   networking.hostName = "{host}";
+
+  # ── Hardware config ──
+  # On a fresh install: copy /etc/nixos/hardware-configuration.nix here
+  # Or run: nixos-generate-config --show-hardware-config > hardware.nix
+  imports = [ ./hardware.nix ];
 
   # ── User account ──
   users.users.{user} = {{
@@ -279,7 +287,17 @@ impl<'a> NixEngine<'a> {
 # Generate with: nixos-generate-config --show-hardware-config > hardware.nix
 # Or after install: cp /etc/nixos/hardware-configuration.nix ./hardware.nix
 
-{{ config, pkgs, lib, ... }}: {{ }}
+{{ config, pkgs, lib, ... }}:
+
+{{
+  # Minimal placeholder to satisfy NixOS evaluation.
+  # Replace with real hardware-configuration.nix before first rebuild.
+  fileSystems."/" = {{
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
+  }};
+  boot.loader.grub.device = "/dev/sda";
+}}
 "#,
             host = self.hostname
         );

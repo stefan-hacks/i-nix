@@ -54,6 +54,21 @@ mod tests {
         let shells_content = std::fs::read_to_string(shells_nix).unwrap();
         assert!(shells_content.contains("shellAliases.i = \"i-nix\""), "shells/default.nix must contain i-nix alias stub");
 
+        // hardware.nix placeholder satisfies NixOS evaluation
+        let hw_nix = Path::new(&config_dir).join("systems/test-host/hardware.nix");
+        let hw_content = std::fs::read_to_string(hw_nix).unwrap();
+        assert!(hw_content.contains("fileSystems.\"/\""), "hardware.nix must contain placeholder root filesystem");
+        assert!(hw_content.contains("boot.loader"), "hardware.nix must contain placeholder bootloader");
+
+        // _common.nix boot loader is commented out (user must configure via hardware.nix)
+        let common_nix = Path::new(&config_dir).join("systems/_common.nix");
+        let common_content = std::fs::read_to_string(common_nix).unwrap();
+        assert!(
+            !common_content.lines().any(|l| l.trim_start() == "boot.loader.systemd-boot.enable = true;"),
+            "_common.nix must NOT set boot loader (should be in hardware.nix)"
+        );
+        assert!(common_content.contains("# boot.loader.systemd-boot.enable = true;"), "_common.nix should have commented boot loader");
+
         drop(temp);
     }
 
