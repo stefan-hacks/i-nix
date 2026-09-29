@@ -26,6 +26,34 @@ mod tests {
         let (temp, config_dir) = setup_test_flake().await;
         let flake_path = Path::new(&config_dir).join("flake.nix");
         assert!(flake_path.exists());
+
+        // i-nix must be wired as a flake input so it is self-managed
+        let flake_content = std::fs::read_to_string(&flake_path).unwrap();
+        assert!(flake_content.contains("i-nix ="), "flake.nix must contain i-nix input");
+        assert!(flake_content.contains("stefan-hacks/i-nix"), "flake.nix must reference the i-nix repo");
+        assert!(flake_content.contains("i-nix, ..."), "outputs must accept i-nix input");
+
+        // Host registry wires i-nix into system packages
+        let hosts_nix = Path::new(&config_dir).join("hosts/default.nix");
+        let hosts_content = std::fs::read_to_string(hosts_nix).unwrap();
+        assert!(hosts_content.contains("inputs.i-nix.packages"), "hosts/default.nix must install i-nix");
+
+        // System config wires i-nix into environment.systemPackages
+        let system_nix = Path::new(&config_dir).join("systems/test-host/default.nix");
+        let system_content = std::fs::read_to_string(system_nix).unwrap();
+        assert!(system_content.contains("inputs.i-nix.packages"), "systems/<host>/default.nix must install i-nix");
+
+        // User config includes i-nix package
+        let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
+        let user_nix = Path::new(&config_dir).join(format!("users/{}/default.nix", username));
+        let user_content = std::fs::read_to_string(user_nix).unwrap();
+        assert!(user_content.contains("inputs.i-nix.packages"), "users/<user>/default.nix must install i-nix");
+
+        // Shell alias stub is present
+        let shells_nix = Path::new(&config_dir).join(format!("users/{}/shells/default.nix", username));
+        let shells_content = std::fs::read_to_string(shells_nix).unwrap();
+        assert!(shells_content.contains("shellAliases.i = \"i-nix\""), "shells/default.nix must contain i-nix alias stub");
+
         drop(temp);
     }
 

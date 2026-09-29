@@ -113,6 +113,11 @@ impl<'a> NixEngine<'a> {
   inputs = {{
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    i-nix = {{
+      url = "github:stefan-hacks/i-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    }};
+
     home-manager = {{
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -124,7 +129,7 @@ impl<'a> NixEngine<'a> {
     }};
   }};
 
-  outputs = inputs @ {{ self, nixpkgs, home-manager, flake-parts, ... }}:
+  outputs = inputs @ {{ self, nixpkgs, home-manager, flake-parts, i-nix, ... }}:
     flake-parts.lib.mkFlake {{ inherit inputs; }} {{
       systems = [ "x86_64-linux" "aarch64-linux" ];
 
@@ -168,8 +173,11 @@ impl<'a> NixEngine<'a> {
       ../systems/_common.nix
       ../systems/{host}
 
-      # ── Custom overlays ──
-      {{ nixpkgs.overlays = [ (import ../overlays) ]; }}
+      # ── i-nix tool (self-managed) ──
+      ({{ pkgs, ... }}: {{
+        nixpkgs.overlays = [ (import ../overlays) ];
+        environment.systemPackages = [ inputs.i-nix.packages.${{pkgs.system}}.default ];
+      }})
 
       # ── Home Manager ──
       inputs.home-manager.nixosModules.home-manager
@@ -179,7 +187,7 @@ impl<'a> NixEngine<'a> {
         home-manager.users.{user} = import ../users/{user};
       }}
     ];
-  }};
+    }};
 }}
 "#,
             host = self.hostname,
@@ -217,7 +225,7 @@ impl<'a> NixEngine<'a> {
             r#"# i-nix system configuration for: {host}
 # Host-specific settings. Import profiles and modules here.
 
-{{ config, pkgs, lib, ... }}:
+{{ config, pkgs, lib, inputs, ... }}:
 
 {{
   # ── Host identity ──
@@ -234,6 +242,8 @@ impl<'a> NixEngine<'a> {
   # ── System packages (managed by i-nix) ──
   # Use: i-nix install <package>
   environment.systemPackages = with pkgs; [
+    # i-nix is self-managed via flake input
+    inputs.i-nix.packages.${{pkgs.system}}.default
   ];
 
   # ── Services ──
@@ -283,12 +293,15 @@ impl<'a> NixEngine<'a> {
             r#"# i-nix home configuration for: {user}
 # Entrypoint — imports per-category modules.
 
-{{ config, pkgs, lib, ... }}:
+{{ config, pkgs, lib, inputs, ... }}:
 
 {{
   home.username = "{user}";
   # homeDirectory is managed by NixOS when using home-manager.nixosModules
   home.stateVersion = "24.11";
+
+  # i-nix is available system-wide via flake input; keep it in user env too
+  home.packages = [ inputs.i-nix.packages.${{pkgs.system}}.default ];
 
   imports = [
     ./packages
@@ -480,6 +493,9 @@ impl<'a> NixEngine<'a> {
   # programs.zsh.enable = true;
   # programs.fish.enable = true;
   # programs.starship.enable = true;
+
+  # Alias: i → i-nix (available once a shell is enabled above)
+  # programs.zsh.shellAliases.i = "i-nix";
 }
 "#;
         std::fs::write(

@@ -94,6 +94,7 @@ pub async fn run(
     println!();
     println!("  Configuration directory: {}", config_dir.dimmed());
     println!("  Hostname: {}", hostname.dimmed());
+    println!("  Username: {}", username.dimmed());
     println!("  Mode: {}", format!("{:?}", mode).dimmed());
     println!();
     println!("  {}", "Next steps:".bold());
@@ -101,6 +102,12 @@ pub async fn run(
     println!("    i-nix install firefox      {}", "# Install a package".dimmed());
     println!("    i-nix install --user kitty {}", "# Install a user package".dimmed());
     println!("    i-nix apply                {}", "# Apply changes".dimmed());
+    println!();
+    println!("  i-nix is self-managed in this flake. After the first rebuild it will");
+    println!("  be permanently available — no need to keep using `nix run ...`.");
+    println!();
+    println!("  Tip: enable your shell in users/{}/shells/default.nix and uncomment", username);
+    println!("       the `programs.zsh.shellAliases.i = \"i-nix\";` line for the `i` alias.");
     println!();
 
     Ok(())

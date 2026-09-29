@@ -248,8 +248,8 @@ async fn check_store_space() -> Result<(u64, u64)> {
 }
 
 async fn check_flake_eval(flake_file: &Path) -> Result<bool> {
-    let output = Command::new("nix")
-        .args(["eval", "--json", "--file", flake_file.to_str().unwrap_or("flake.nix"), "description"])
+    let output = Command::new("nix-instantiate")
+        .args(["--parse", flake_file.to_str().unwrap_or("flake.nix")])
         .output()
         .await?;
     Ok(output.status.success())
