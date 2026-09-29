@@ -3,7 +3,8 @@ use std::path::Path;
 
 use crate::config::InstallTarget;
 use crate::nixast::{
-    PackageEntry, read_system_packages, read_home_packages, write_system_packages, write_home_packages,
+    extract_hardware_settings, extract_network_settings, read_home_packages, read_system_packages,
+    write_home_packages, write_system_packages, PackageEntry,
 };
 
 /// NixEngine — the bridge between user intent and Nix configuration.
@@ -225,13 +226,10 @@ impl<'a> NixEngine<'a> {
 {{ config, pkgs, lib, inputs, ... }}:
 
 {{
-  # ── Host identity ──
-  networking.hostName = "{host}";
-
-  # ── Hardware config ──
+  # ── Hardware & network config ──
   # On a fresh install: copy /etc/nixos/hardware-configuration.nix here
   # Or run: nixos-generate-config --show-hardware-config > hardware.nix
-  imports = [ ./hardware.nix ];
+  imports = [ ./hardware.nix ./network.nix ];
 
   # ── User account ──
   users.users.{user} = {{
@@ -274,9 +272,21 @@ impl<'a> NixEngine<'a> {
             system_nix,
         )?;
 
-        // ── systems/<hostname>/hardware.nix (placeholder) ──
-        let hardware_nix = format!(
-            r#"# Hardware configuration for: {host}
+        // ── systems/<hostname>/hardware.nix ──
+        let hardware_path = flake_dir.join(format!("systems/{}/hardware.nix", self.hostname));
+        let network_path = flake_dir.join(format!("systems/{}/network.nix", self.hostname));
+        let etc_hardware = Path::new("/etc/nixos/hardware-configuration.nix");
+        let etc_config = Path::new("/etc/nixos/configuration.nix");
+
+        let mut hardware_content = String::new();
+
+        if etc_hardware.exists() {
+            // Copy real hardware-configuration.nix
+            hardware_content = std::fs::read_to_string(etc_hardware)?;
+        } else {
+            // Placeholder for non-NixOS or fresh install
+            hardware_content = format!(
+                r#"# Hardware configuration for: {host}
 # Generate with: nixos-generate-config --show-hardware-config > hardware.nix
 # Or after install: cp /etc/nixos/hardware-configuration.nix ./hardware.nix
 
@@ -292,12 +302,57 @@ impl<'a> NixEngine<'a> {
   boot.loader.grub.device = "/dev/sda";
 }}
 "#,
+                host = self.hostname
+            );
+        }
+
+        // Also extract hardware settings from configuration.nix (LUKS, extra boot, etc.)
+        if etc_config.exists() {
+            let extracted = extract_hardware_settings(etc_config);
+            if !extracted.is_empty() {
+                hardware_content.push_str("\n\n# ── Extracted from /etc/nixos/configuration.nix ──\n");
+                hardware_content.push_str(&extracted);
+                hardware_content.push('\n');
+            }
+        }
+
+        std::fs::write(&hardware_path, hardware_content)?;
+
+        // ── systems/<hostname>/network.nix ──
+        let mut network_content = format!(
+            r#"# Network configuration for: {host}
+# Host-specific networking settings.
+
+{{ config, pkgs, lib, ... }}:
+
+{{
+  # Default hostname — override if needed.
+  networking.hostName = "{host}";
+}}
+"#,
             host = self.hostname
         );
-        std::fs::write(
-            flake_dir.join(format!("systems/{}/hardware.nix", self.hostname)),
-            hardware_nix,
-        )?;
+
+        if etc_config.exists() {
+            let extracted = extract_network_settings(etc_config);
+            if !extracted.is_empty() {
+                network_content = format!(
+                    r#"# Network configuration for: {host}
+# Extracted from /etc/nixos/configuration.nix.
+
+{{ config, pkgs, lib, ... }}:
+
+{{
+  {extracted}
+}}
+"#,
+                    host = self.hostname,
+                    extracted = extracted
+                );
+            }
+        }
+
+        std::fs::write(&network_path, network_content)?;
 
         // ── users/<username>/default.nix (entrypoint) ──
         let user_default = format!(

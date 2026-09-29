@@ -40,8 +40,20 @@ mod tests {
 
         // System config wires i-nix into environment.systemPackages
         let system_nix = Path::new(&config_dir).join("systems/test-host/default.nix");
-        let system_content = std::fs::read_to_string(system_nix).unwrap();
-        assert!(system_content.contains("inputs.i-nix.packages"), "systems/<host>/default.nix must install i-nix");
+        let def_content = std::fs::read_to_string(&system_nix).unwrap();
+        assert!(def_content.contains("inputs.i-nix.packages"), "systems/<host>/default.nix must install i-nix");
+
+        // default.nix imports both hardware.nix and network.nix
+        assert!(
+            def_content.contains("./hardware.nix ./network.nix"),
+            "default.nix must import hardware.nix and network.nix"
+        );
+
+        // default.nix must NOT contain networking.hostName (belongs in network.nix)
+        assert!(
+            !def_content.contains("networking.hostName"),
+            "default.nix must NOT contain networking.hostName (belongs in network.nix)"
+        );
 
         // User config includes i-nix package
         let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
@@ -70,6 +82,14 @@ mod tests {
         assert!(
             !common_content.contains("fileSystems"),
             "_common.nix must NOT contain fileSystems (belongs in hardware.nix)"
+        );
+
+        // network.nix exists and contains hostname
+        let net_nix = Path::new(&config_dir).join("systems/test-host/network.nix");
+        let net_content = std::fs::read_to_string(net_nix).unwrap();
+        assert!(
+            net_content.contains("networking.hostName"),
+            "network.nix must contain networking.hostName"
         );
 
         drop(temp);

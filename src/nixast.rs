@@ -291,6 +291,141 @@ pub fn remove_enable_line(source: &str, module_path: &str) -> Result<String> {
     }
 }
 
+/// Hardware-related option prefixes that belong in hardware.nix.
+const HARDWARE_PREFIXES: &[&str] = &[
+    "boot.loader.",
+    "boot.initrd.",
+    "boot.kernel.",
+    "boot.extraModule",
+    "boot.supportedFilesystems",
+    "boot.zfs.",
+    "fileSystems.",
+    "swapDevices",
+    "hardware.",
+    "virtualisation.",
+    "services.fstrim",
+    "services.btrfs",
+    "services.smartd",
+    "powerManagement.",
+    "nix.settings.max-jobs",
+    "nix.settings.cores",
+];
+
+/// Network-related option prefixes that belong in network.nix.
+const NETWORK_PREFIXES: &[&str] = &[
+    "networking.hostName",
+    "networking.hosts",
+    "networking.networkmanager",
+    "networking.wireless",
+    "networking.wifi",
+    "networking.proxy",
+    "networking.useDHCP",
+    "networking.interfaces",
+    "networking.nameservers",
+    "networking.defaultGateway",
+    "networking.firewall",
+    "networking.nat",
+    "networking.bridges",
+    "networking.vlans",
+    "networking.macvlans",
+    "networking.wgquick",
+    "networking.wireguard",
+];
+
+/// Extract hardware-related settings from an existing NixOS configuration.nix.
+/// Returns a string of the extracted settings (empty if file not found).
+pub fn extract_hardware_settings(path: &Path) -> String {
+    extract_by_prefixes(path, HARDWARE_PREFIXES)
+}
+
+/// Extract network-related settings from an existing NixOS configuration.nix.
+pub fn extract_network_settings(path: &Path) -> String {
+    extract_by_prefixes(path, NETWORK_PREFIXES)
+}
+
+/// Generic block extractor: given a Nix config file and a list of attribute
+/// prefixes, extract every top-level attribute block that matches any prefix.
+fn extract_by_prefixes(path: &Path, prefixes: &[&str]) -> String {
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return String::new(),
+    };
+    let lines: Vec<&str> = content.lines().collect();
+    let mut extracted = Vec::new();
+    let mut i = 0;
+
+    while i < lines.len() {
+        let line = lines[i];
+        let trimmed = line.trim_start();
+
+        // Skip comments, empty lines, and the imports block
+        if trimmed.is_empty()
+            || trimmed.starts_with('#')
+            || trimmed.starts_with("imports")
+        {
+            i += 1;
+            continue;
+        }
+
+        // Check if this line starts any of the target prefixes
+        let is_target = prefixes.iter().any(|p| trimmed.starts_with(p));
+
+        if !is_target {
+            i += 1;
+            continue;
+        }
+
+        // Capture this block — find its full extent
+        let mut block = Vec::new();
+        block.push(line.to_string());
+
+        let leading_spaces = line.len() - line.trim_start().len();
+        let mut j = i + 1;
+        let mut brace_depth =
+            trimmed.matches('{').count() as i32 - trimmed.matches('}').count() as i32;
+        let mut bracket_depth =
+            trimmed.matches('[').count() as i32 - trimmed.matches(']').count() as i32;
+        let mut in_multiline_string = trimmed.matches("''").count() % 2 == 1;
+
+        while j < lines.len() {
+            let next_line = lines[j];
+            let next_trimmed = next_line.trim_start();
+
+            // Empty line followed by top-level attribute = end of block
+            let next_spaces = next_line.len() - next_line.trim_start().len();
+            if next_spaces <= leading_spaces
+                && !next_trimmed.is_empty()
+                && !in_multiline_string
+                && brace_depth <= 0
+                && bracket_depth <= 0
+            {
+                break;
+            }
+
+            brace_depth += next_trimmed.matches('{').count() as i32
+                - next_trimmed.matches('}').count() as i32;
+            bracket_depth += next_trimmed.matches('[').count() as i32
+                - next_trimmed.matches(']').count() as i32;
+
+            // Toggle multiline string state on odd counts of ''
+            if next_trimmed.contains("''") {
+                let count = next_trimmed.matches("''").count();
+                if count % 2 == 1 {
+                    in_multiline_string = !in_multiline_string;
+                }
+            }
+
+            block.push(next_line.to_string());
+            j += 1;
+        }
+
+        extracted.push(block.join("\n"));
+        i = j;
+    }
+
+    extracted.join("\n\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -349,5 +484,136 @@ mod tests {
     fn test_validate_nix_syntax() {
         let good = r#"{ pkgs }: { a = 1; }"#;
         assert!(validate_nix_syntax(good).is_ok());
+    }
+
+    #[test]
+    fn test_extract_hardware_settings_luks() {
+        let config = r#"
+{ config, pkgs, ... }:
+
+{
+  imports = [ ./hardware-configuration.nix ];
+
+  boot.initrd.luks.devices."nixos-enc" = {
+    device = "/dev/disk/by-uuid/abc123";
+    preLVM = true;
+  };
+
+  environment.systemPackages = [ vim ];
+}
+"#;
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), config).unwrap();
+        let extracted = extract_hardware_settings(temp.path());
+        assert!(extracted.contains("boot.initrd.luks"), "Should extract LUKS settings");
+        assert!(
+            !extracted.contains("environment.systemPackages"),
+            "Should NOT extract non-hardware settings"
+        );
+    }
+
+    #[test]
+    fn test_extract_hardware_settings_boot_loader() {
+        let config = r#"
+{ config, pkgs, ... }:
+
+{
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  users.users.alice.isNormalUser = true;
+}
+"#;
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), config).unwrap();
+        let extracted = extract_hardware_settings(temp.path());
+        assert!(extracted.contains("boot.loader.systemd-boot"), "Should extract boot loader");
+        assert!(
+            !extracted.contains("users.users.alice"),
+            "Should NOT extract user settings"
+        );
+    }
+
+    #[test]
+    fn test_extract_hardware_settings_fileSystems() {
+        let config = r#"
+{ config, pkgs, ... }:
+
+{
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/xxx";
+    fsType = "ext4";
+  };
+
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/yyy";
+    fsType = "vfat";
+  };
+
+  services.openssh.enable = true;
+}
+"#;
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), config).unwrap();
+        let extracted = extract_hardware_settings(temp.path());
+        assert!(extracted.contains("fileSystems.\"/\""), "Should extract root filesystem");
+        assert!(extracted.contains("fileSystems.\"/boot\""), "Should extract boot filesystem");
+        assert!(
+            !extracted.contains("services.openssh"),
+            "Should NOT extract ssh service"
+        );
+    }
+
+    #[test]
+    fn test_extract_network_settings_real_config() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        let config_path = temp.path();
+        std::fs::write(
+            config_path,
+            r#"{ config, pkgs, ... }:
+{
+  imports = [ ./hardware-configuration.nix ];
+
+  boot.loader.grub.enable = true;
+  boot.loader.grub.device = "/dev/vda";
+
+  networking.hostName = "nixvm";
+  networking.networkmanager.enable = true;
+
+  time.timeZone = "America/Sao_Paulo";
+}
+"#,
+        )
+        .unwrap();
+
+        let hw = extract_hardware_settings(config_path);
+        assert!(
+            hw.contains("boot.loader.grub"),
+            "must extract boot.loader settings"
+        );
+        assert!(
+            !hw.contains("networking.hostName"),
+            "must NOT include hostName in hardware"
+        );
+
+        let net = extract_network_settings(config_path);
+        assert!(
+            net.contains("networking.hostName = \"nixvm\""),
+            "must extract hostName"
+        );
+        assert!(
+            net.contains("networking.networkmanager.enable = true"),
+            "must extract networkmanager"
+        );
+        assert!(
+            !net.contains("boot.loader"),
+            "must NOT include boot in network"
+        );
+    }
+
+    #[test]
+    fn test_extract_hardware_settings_not_found() {
+        let result = extract_hardware_settings(Path::new("/nonexistent/path"));
+        assert!(result.is_empty(), "Should return empty string for missing file");
     }
 }
