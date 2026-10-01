@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! Nix AST manipulation — line-based but structured.
 //! Avoids regex by tracking bracket depth and context.
 
@@ -135,7 +136,6 @@ pub fn update_package_list(
                 if bracket_depth <= 0 {
                     // Single-line: replace entire line
                     lines[i] = format_package_line(attr_path, packages);
-                    in_target = false;
                     found = true;
                     break;
                 }

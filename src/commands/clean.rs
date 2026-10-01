@@ -1,5 +1,4 @@
 use anyhow::Result;
-use colored::Colorize;
 use tokio::process::Command;
 
 use crate::style;
@@ -9,7 +8,7 @@ pub async fn run(
     subcommand: &str,
     profile: Option<String>,
     dry_run: bool,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     style::header();
     style::section_legacy(&format!("nh clean {}", subcommand));

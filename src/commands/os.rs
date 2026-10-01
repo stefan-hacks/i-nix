@@ -1,5 +1,4 @@
 use anyhow::Result;
-use colored::Colorize;
 use std::path::Path;
 use tokio::process::Command;
 

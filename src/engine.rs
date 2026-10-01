@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use anyhow::Result;
 use std::path::Path;
 
@@ -278,7 +279,7 @@ impl<'a> NixEngine<'a> {
         let etc_hardware = Path::new("/etc/nixos/hardware-configuration.nix");
         let etc_config = Path::new("/etc/nixos/configuration.nix");
 
-        let mut hardware_content = String::new();
+        let mut hardware_content;
 
         if etc_hardware.exists() {
             // Copy real hardware-configuration.nix

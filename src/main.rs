@@ -152,6 +152,9 @@ enum Commands {
         /// Skip nix fmt on output
         #[arg(long)]
         no_fmt: bool,
+        /// Mirror source file tree into output (copy non-.nix files too)
+        #[arg(long)]
+        mirror: bool,
     },
 
     /// Diagnose the Nix/NixOS/i-nix installation
@@ -355,9 +358,9 @@ async fn main() {
         Commands::Adopt { write } => {
             adopt::run(&config_dir, write, cli.verbose, cli.dry_run).await
         }
-        Commands::Import { source, output, no_fmt } => {
+        Commands::Import { source, output, no_fmt, mirror } => {
             let output_dir = output.unwrap_or_else(|| config_dir.clone());
-            import::run(&source, &output_dir, cli.verbose, cli.dry_run, no_fmt).await
+            import::run(&source, &output_dir, cli.verbose, cli.dry_run, no_fmt, mirror).await
         }
         Commands::Doctor => {
             doctor::run(&config_dir).await

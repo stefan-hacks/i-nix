@@ -1,7 +1,7 @@
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
-use std::path::Path;
+
 
 /// Build OCI container images from a Nix expression or the current flake.
 ///
@@ -173,7 +173,7 @@ async fn list_images() -> Result<()> {
     Ok(())
 }
 
-async fn load_container(target: Option<String>) -> Result<()> {
+async fn load_container(_target: Option<String>) -> Result<()> {
     println!();
     println!("{}", "Loading Nix container into Docker...".cyan().bold());
     println!();

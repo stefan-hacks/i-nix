@@ -44,7 +44,7 @@ pub async fn run(config_dir: &str, interactive: bool, generation: Option<u32>) -
     println!("{}", "Available generations:".bold());
     println!();
 
-    for (i, generation) in generations.iter().enumerate() {
+    for (_i, generation) in generations.iter().enumerate() {
         let marker = if Some(generation.number) == current_gen {
             "●".green().bold()
         } else {
@@ -152,6 +152,7 @@ struct Generation {
     date: String,
     nixos_version: String,
     kernel: String,
+    #[allow(dead_code)]
     is_current: bool,
 }
 

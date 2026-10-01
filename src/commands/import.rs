@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 use anyhow::{Context, Result};
 use colored::Colorize;
 use regex::Regex;
@@ -18,6 +19,7 @@ pub async fn run(
     verbose: bool,
     dry_run: bool,
     no_fmt: bool,
+    mirror: bool,
 ) -> Result<()> {
     let src = Path::new(source_path);
     if !src.exists() {
@@ -42,6 +44,15 @@ pub async fn run(
     style::kv("Home configs", &discovery.home_configs.len().to_string());
     style::kv("Additional .nix files", &discovery.nix_files.len().to_string());
 
+    // ── Deprecated patterns scan ──
+    let deprecated = scan_deprecated_patterns(src);
+    if !deprecated.is_empty() {
+        style::section("⚠️", "Deprecated patterns detected");
+        for (label, file, advice) in deprecated {
+            style::warning(&format!("{} in {} — {}", label, file, advice));
+        }
+    }
+
     if dry_run {
         style::warning("Dry run — would generate i-nix structure (no changes made).");
         return Ok(());
@@ -60,6 +71,12 @@ pub async fn run(
 
     // Base init (creates dirs + standard boilerplate)
     engine.init("system", discovery.has_home_manager)?;
+
+    // Mirror source tree if requested
+    if mirror && !discovery.source_files.is_empty() {
+        style::step_simple("Mirroring source file tree...");
+        mirror_source_tree(src, out, &discovery.source_files)?;
+    }
 
     // Overwrite flake.nix with merged inputs from discovered repo
     let merged_flake = build_merged_flake(&discovery, &hostname, &username);
@@ -197,7 +214,13 @@ pub async fn run(
         }
     }
 
-    // ── 5. State file ──
+    // ── 5. Mirror full source tree ──
+    if verbose {
+        style::step_simple("Mirroring source tree...");
+    }
+    mirror_source_tree(src, out, &discovery.source_files)?;
+
+    // ── 6. State file ──
     let state = crate::config::INixState {
         version: env!("CARGO_PKG_VERSION").to_string(),
         hostname: hostname.clone(),
@@ -213,20 +236,29 @@ pub async fn run(
     };
     state.save(out)?;
 
-    println!();
-    println!("{}", "✓ Import complete".green().bold());
-    println!();
-    println!("  Output directory: {}", output_dir.dimmed());
-    println!("  Hostname: {}", hostname.dimmed());
-    println!("  Username: {}", username.dimmed());
-    println!();
-    println!("  {}", "Next steps:".bold());
-    println!("    cd {} && git init", output_dir.dimmed());
-    println!(
-        "    i-nix apply              {}",
-        "# Apply the imported configuration".dimmed()
-    );
-    println!();
+    // ── Optional: mirror source tree ──
+    if mirror {
+        style::step_simple("Mirroring source file tree...");
+        mirror_source_tree(src, out, &discovery.source_files)?;
+        style::success("Source tree mirrored");
+    }
+
+    // ── Dendritic output display ──
+    style::separator();
+    style::section("🗂️", "Source Tree");
+    for line in discovery.directory_tree.lines() {
+        println!("{}", line);
+    }
+
+    style::separator();
+    style::success("Import complete");
+    style::kv("Output directory", output_dir);
+    style::kv("Hostname", &hostname);
+    style::kv("Username", &username);
+    style::section("🚀", "Next steps");
+    style::step_simple("cd DIR && git init");
+    style::step_simple("i-nix apply              # Apply the imported configuration");
+    style::footer();
 
     Ok(())
 }
@@ -242,6 +274,10 @@ struct Discovery {
     nixos_hosts: BTreeMap<String, NixosHostInfo>,
     home_configs: BTreeMap<String, HomeConfigInfo>,
     nix_files: Vec<PathBuf>,
+    /// All source files discovered (non-store, non-result)
+    source_files: Vec<PathBuf>,
+    /// Directory tree for dendritic display
+    directory_tree: String,
     inputs: BTreeMap<String, InputSpec>,
     has_home_manager: bool,
     has_disko: bool,
@@ -389,17 +425,21 @@ async fn discover(src: &Path, verbose: bool) -> Result<Discovery> {
     d.home_configs = discover_home_configs(src, &flake_content, verbose).await?;
 
     // Collect all .nix files
-    for entry in WalkDir::new(src).max_depth(5) {
+    for entry in WalkDir::new(src) {
         let entry = entry?;
         let path = entry.path();
         if path.extension().map(|e| e == "nix").unwrap_or(false) {
-            // Exclude result links, nix store paths
             let s = path.to_string_lossy();
             if !s.contains("/nix/store/") && !s.starts_with("result") {
                 d.nix_files.push(path.to_path_buf());
             }
         }
     }
+
+    // ── Full recursive source tree discovery ──
+    let (tree_lines, all_files) = build_source_tree(src);
+    d.directory_tree = tree_lines.join("\n");
+    d.source_files = all_files;
 
     // Try to find disko config source
     if d.has_disko {
@@ -717,6 +757,10 @@ fn guess_hostname(d: &Discovery) -> Option<String> {
 }
 
 fn guess_username(d: &Discovery) -> Option<String> {
+    // Prefer the known user; fall back to first home config key
+    if d.home_configs.contains_key("stefan-hacks") {
+        return Some("stefan-hacks".to_string());
+    }
     d.home_configs.keys().next().cloned()
 }
 
@@ -980,7 +1024,7 @@ fn build_system_nix(
     )
 }
 
-fn build_network_nix(host_name: &str, info: &NixosHostInfo) -> String {
+fn build_network_nix(host_name: &str, _info: &NixosHostInfo) -> String {
     format!(
         r#"# Network configuration for: {host}
 
@@ -1361,4 +1405,225 @@ fn build_home_module(d: &Discovery) -> String {
 "#,
         extra = extra,
     )
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Full source tree discovery
+// ═════════════════════════════════════════════════════════════════════════════
+
+fn build_source_tree(src: &Path) -> (Vec<String>, Vec<PathBuf>) {
+    let mut tree = vec![format!("  {} {}/", "📁".magenta(), src.file_name().unwrap_or_default().to_string_lossy())];
+    let mut all_files = Vec::new();
+
+    let entries: Vec<_> = match std::fs::read_dir(src) {
+        Ok(rd) => rd.filter_map(|e| e.ok()).collect(),
+        Err(_) => return (tree, all_files),
+    };
+
+    let mut dirs: Vec<_> = entries.iter().filter(|e| e.file_type().map(|ft| ft.is_dir()).unwrap_or(false)).collect();
+    let mut files: Vec<_> = entries.iter().filter(|e| e.file_type().map(|ft| ft.is_file()).unwrap_or(false)).collect();
+
+    dirs.sort_by_key(|a| a.file_name());
+    files.sort_by_key(|a| a.file_name());
+
+    let total_dirs = dirs.len();
+    let total_files = files.len();
+
+    for (i, entry) in dirs.iter().enumerate() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let is_last = i + 1 == total_dirs && total_files == 0;
+        let prefix = if is_last { "  └─" } else { "  ├─" };
+        tree.push(format!("{} {} {}/", prefix, "📁".magenta(), name));
+
+        let sub = entry.path();
+        let (sub_tree, sub_files) = build_source_tree_recursive(&sub, "  ", is_last, &[String::from("result"), String::from(".git"), String::from("node_modules"), String::from("target")],
+        );
+        tree.extend(sub_tree);
+        all_files.extend(sub_files);
+    }
+
+    for (i, entry) in files.iter().enumerate() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let is_last = i + 1 == total_files;
+        let prefix = if is_last { "  └─" } else { "  ├─" };
+        let icon = file_icon(&name);
+        tree.push(format!("{} {} {}", prefix, icon, name));
+        all_files.push(entry.path());
+    }
+
+    (tree, all_files)
+}
+
+fn build_source_tree_recursive(
+    dir: &Path,
+    indent: &str,
+    parent_is_last: bool,
+    exclude: &[String],
+) -> (Vec<String>, Vec<PathBuf>) {
+    let mut tree = Vec::new();
+    let mut all_files = Vec::new();
+
+    let entries: Vec<_> = match std::fs::read_dir(dir) {
+        Ok(rd) => rd.filter_map(|e| e.ok()).collect(),
+        Err(_) => return (tree, all_files),
+    };
+
+    let dirs: Vec<_> = entries
+        .iter()
+        .filter(|e| {
+            let name = e.file_name();
+            let name_str = name.to_string_lossy();
+            !exclude.iter().any(|ex| name_str.contains(ex))
+                && e.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+        })
+        .collect();
+    let files: Vec<_> = entries
+        .iter()
+        .filter(|e| {
+            let name = e.file_name();
+            let name_str = name.to_string_lossy();
+            !exclude.iter().any(|ex| name_str.contains(ex))
+                && e.file_type().map(|ft| ft.is_file()).unwrap_or(false)
+        })
+        .collect();
+
+    let total_dirs = dirs.len();
+    let total_files = files.len();
+
+    let pipe = if parent_is_last { "   " } else { "  │" };
+    let child_indent = format!("{}{}", indent, pipe);
+
+    for (i, entry) in dirs.iter().enumerate() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let is_last = i + 1 == total_dirs && total_files == 0;
+        let prefix = if is_last { "└─" } else { "├─" };
+        tree.push(format!("{}{} {} {}/", child_indent, prefix, "📁".magenta(), name));
+
+        let (sub_tree, sub_files) = build_source_tree_recursive(
+            &entry.path(),
+            &child_indent,
+            is_last,
+            exclude,
+        );
+        tree.extend(sub_tree);
+        all_files.extend(sub_files);
+    }
+
+    for (i, entry) in files.iter().enumerate() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let is_last = i + 1 == total_files;
+        let prefix = if is_last { "└─" } else { "├─" };
+        let icon = file_icon(&name);
+        tree.push(format!("{}{} {} {}", child_indent, prefix, icon, name));
+        all_files.push(entry.path());
+    }
+
+    (tree, all_files)
+}
+
+fn file_icon(name: &str) -> &'static str {
+    if name.ends_with(".nix") { "❄️" }
+    else if name.ends_with(".md") { "📝" }
+    else if name.ends_with(".rs") { "🦀" }
+    else if name.ends_with(".py") { "🐍" }
+    else if name.ends_with(".sh") { "🐚" }
+    else if name.ends_with(".toml") || name.ends_with(".yaml") || name.ends_with(".yml") || name.ends_with(".json") { "⚙️" }
+    else if name.ends_with(".lock") { "🔒" }
+    else if name.ends_with(".nix~") || name.ends_with(".bak") { "🗑️" }
+    else if name.starts_with(".") { "🔒" }
+    else { "📄" }
+}
+
+fn mirror_source_tree(src: &Path, out: &Path, files: &[PathBuf]) -> Result<()> {
+    for rel in files {
+        let rel_path = match rel.strip_prefix(src) {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+        let dest = out.join(rel_path);
+        if let Some(parent) = dest.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        std::fs::copy(rel, dest).ok();
+    }
+    Ok(())
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Deprecated / removed pattern warnings (NixOS 26.05/26.11)
+// ═════════════════════════════════════════════════════════════════════════════
+
+fn scan_deprecated_patterns(src: &Path) -> Vec<(String, String, String)> {
+    let mut warnings = Vec::new();
+
+    let patterns: Vec<(&str, &str, &str)> = vec![
+        (
+            r#"boot\.initrd\.systemd\.enable\s*=\s*false"#,
+            "Old scripted initrd",
+            "NixOS 26.11 removes scripted initrd. Use systemd-based initrd (default).",
+        ),
+        (
+            r#"linuxPackages_hardened|linux_hardened"#,
+            "linux_hardened removed",
+            "linux_hardened was removed in 26.05. Use standard kernel + explicit hardening.",
+        ),
+        (
+            r#"nodePackages\."#,
+            "nodePackages removed",
+            "nodePackages was removed in 26.05. Use pkgs.foo directly.",
+        ),
+        (
+            r#"node2nix"#,
+            "node2nix removed",
+            "node2nix was removed in 26.05. Use modern language-specific packaging.",
+        ),
+        (
+            r#"fetchFromSavannah"#,
+            "fetchFromSavannah deprecated",
+            "fetchFromSavannah is deprecated. Migrate to fetchgit or fetchurl.",
+        ),
+        (
+            r#"nixexprs\.tar\.xz"#,
+            "nixexprs.tar.xz deprecated",
+            "nixexprs.tar.xz will be retired by 2027-12-31. Use nixexprs.tar.zst or flakes.",
+        ),
+        (
+            r#"linuxPackages_[0-9]+"#,
+            "Old kernel pinned",
+            "Old kernel packages are continuously removed. Prefer pkgs.linuxPackages unless you have a specific hardware reason.",
+        ),
+        (
+            r#"linux_rpi[0-9]"#,
+            "linux_rpi removed",
+            "linux_rpi packages removed. Use nixos-hardware for Raspberry Pi support.",
+        ),
+    ];
+
+    for entry in WalkDir::new(src).max_depth(6) {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        let path = entry.path();
+        if path.extension().map(|e| e == "nix").unwrap_or(false) {
+            let content = match fs::read_to_string(path) {
+                Ok(c) => c,
+                Err(_) => continue,
+            };
+            for (re_str, label, advice) in &patterns {
+                let re = Regex::new(re_str).unwrap();
+                if re.is_match(&content) {
+                    let rel = path.strip_prefix(src).unwrap_or(path);
+                    warnings.push((
+                        label.to_string(),
+                        rel.display().to_string(),
+                        advice.to_string(),
+                    ));
+                    break; // One warning per file per pattern type
+                }
+            }
+        }
+    }
+
+    warnings
 }

@@ -13,7 +13,7 @@
 use colored::Colorize;
 use console::Term;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
-use std::sync::Arc;
+
 use std::time::Duration;
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -478,7 +478,7 @@ pub fn footer() {
 
 /// Wrap text to terminal width.
 pub fn wrap(text: &str) -> Vec<String> {
-    let w = term_width().saturating_sub(6);
+    let _w = term_width().saturating_sub(6);
     text.split_whitespace().collect::<Vec<_>>()
         .chunks(10)
         .map(|chunk| chunk.join(" "))

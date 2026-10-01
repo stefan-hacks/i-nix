@@ -16,6 +16,7 @@ pub enum DesktopEnv {
     PopOS,
     Hyprland,
     Sway,
+    #[allow(non_camel_case_types)]
     i3,
     Niri,
     QuickShell,

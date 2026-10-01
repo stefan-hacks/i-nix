@@ -22,7 +22,7 @@ pub async fn run(
     auto: bool,
     packages_only: bool,
     services_only: bool,
-    verbose: bool,
+    _verbose: bool,
     dry_run: bool,
 ) -> Result<()> {
     let config_path = Path::new(config_dir);

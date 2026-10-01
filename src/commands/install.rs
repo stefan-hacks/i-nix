@@ -9,7 +9,7 @@ pub async fn run(
     config_dir: &str,
     packages: Vec<String>,
     user: bool,
-    program: bool,
+    _program: bool,
     attribute: Option<String>,
     verbose: bool,
     dry_run: bool,

@@ -4,7 +4,7 @@
 //! Generates well-organized, split output (equivalent to `nmg -s`).
 
 use anyhow::Result;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::path::Path;
 
 /// A single dconf section (e.g. [org/gnome/desktop/interface]).
@@ -30,9 +30,9 @@ pub fn parse_dconf_dump(input: &str) -> Vec<DconfSection> {
         // Section header: [org/gnome/desktop/interface]
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
             // Save previous section
-            if let Some(ref path) = current_path {
+            if let Some(ref _path) = current_path {
                 sections.push(DconfSection {
-                    path: path.clone(),
+                    path: _path.clone(),
                     settings: std::mem::take(&mut current_settings),
                 });
             }
@@ -42,7 +42,7 @@ pub fn parse_dconf_dump(input: &str) -> Vec<DconfSection> {
 
         // Key-value: key=value
         if let Some(pos) = trimmed.find('=') {
-            if let Some(ref path) = current_path {
+            if let Some(ref _path) = current_path {
                 let key = trimmed[..pos].trim().to_string();
                 let raw_val = trimmed[pos + 1..].trim();
                 let nix_val = gvariant_to_nix(raw_val);

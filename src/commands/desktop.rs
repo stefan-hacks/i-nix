@@ -18,7 +18,7 @@ pub async fn run(
     subcommand: Option<String>,
     de_name: Option<String>,
     from_live: bool,
-    verbose: bool,
+    _verbose: bool,
     dry_run: bool,
 ) -> Result<()> {
     let config_path = Path::new(config_dir);
@@ -31,7 +31,7 @@ pub async fn run(
     let username = std::env::var("USER").unwrap_or_else(|_| "user".to_string());
 
     match subcommand.as_deref() {
-        Some("detect") => detect_current_de(verbose).await,
+        Some("detect") => detect_current_de(_verbose).await,
         Some("generate") => {
             let de = resolve_de_name(de_name.as_deref().unwrap_or(""));
             if dry_run {
@@ -45,7 +45,7 @@ pub async fn run(
             ).await
         }
         Some("list") => detect::list_supported().await,
-        Some("apply") => apply_de(config_path, &state.hostname, &username, verbose).await,
+        Some("apply") => apply_de(config_path, &state.hostname, &username, _verbose).await,
         _ => {
             println!();
             println!("{}", "i-nix desktop".bold().underline());
@@ -96,7 +96,7 @@ async fn apply_de(
     config_path: &Path,
     hostname: &str,
     username: &str,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     use crate::engine::NixEngine;
 
