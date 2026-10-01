@@ -22,6 +22,12 @@ use commands::*;
 #[command(about = "Imperative UX for declarative Nix/NixOS systems")]
 #[command(version = "0.1.0")]
 #[command(propagate_version = true)]
+#[command(
+    help_template = r#"{before-help}{about-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}"#,
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -402,7 +408,7 @@ async fn main() {
     };
 
     if let Err(e) = result {
-        eprintln!("{} {}", "error:".red().bold(), e);
+        style::error(&e.to_string());
         if cli.verbose {
             let backtrace = e.backtrace();
             eprintln!("{}", backtrace);

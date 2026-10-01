@@ -27,7 +27,7 @@ pub async fn run(
     let flake_ref = format!("{}#nixosConfigurations.{}" , config_dir, host);
 
     style::header();
-    style::section(&format!("nh os {}", subcommand));
+    style::section_legacy(&format!("nh os {}", subcommand));
 
     match subcommand {
         "switch" => {
@@ -93,7 +93,7 @@ pub async fn run(
             }
         }
         "info" => {
-            style::subsection("System generations");
+            style::subsection_legacy("System generations");
             if !crate::config::is_nixos() {
                 style::warning("Not running on NixOS");
                 return Ok(());

@@ -12,7 +12,7 @@ pub async fn run(
     verbose: bool,
 ) -> Result<()> {
     style::header();
-    style::section(&format!("nh clean {}", subcommand));
+    style::section_legacy(&format!("nh clean {}", subcommand));
 
     match subcommand {
         "all" => {

@@ -31,7 +31,7 @@ pub async fn run(
     let flake_ref = format!("{}#homeConfigurations.\"{}@{}\"", config_dir, username, host);
 
     style::header();
-    style::section(&format!("nh home {}", subcommand));
+    style::section_legacy(&format!("nh home {}", subcommand));
 
     match subcommand {
         "switch" => {

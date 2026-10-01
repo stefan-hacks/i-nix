@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::engine::NixEngine;
+use crate::style;
 
 /// Import an existing flake/flake-parts/home-manager/disko/etc. repository
 /// into an i-nix optimal configuration structure.
@@ -23,61 +24,26 @@ pub async fn run(
         anyhow::bail!("Source path does not exist: {}", source_path);
     }
 
-    println!();
-    println!(
-        "{}",
-        "╭──────────────────────────────────────────────────────────╮"
-            .cyan()
-    );
-    println!(
-        "{}",
-        "│  i-nix import — migrate existing Nix configuration      │"
-            .cyan()
-            .bold()
-    );
-    println!(
-        "{}",
-        "╰──────────────────────────────────────────────────────────╯"
-            .cyan()
-    );
-    println!();
+    // ── Banner ──
+    style::banner("import", "migrate existing Nix configuration");
 
     // ── 1. Discovery ──
     let discovery = discover(src, verbose).await?;
 
-    println!("{}", "Discovery Results".bold());
-    println!();
-    println!("  {} Detected frameworks:", "●".green());
+    style::section("", "Discovery Results");
     for fw in &discovery.frameworks {
-        println!("    {} {}", "·".cyan(), fw);
+        style::item_label("discovered", fw);
     }
-    println!();
 
     if let Some(ref flake) = discovery.flake_path {
-        println!("  {} flake.nix: {}", "●".green(), flake.display());
+        style::kv("flake.nix", &flake.display().to_string());
     }
-    println!(
-        "  {} NixOS hosts: {}",
-        "●".green(),
-        discovery.nixos_hosts.len()
-    );
-    println!(
-        "  {} Home configurations: {}",
-        "●".green(),
-        discovery.home_configs.len()
-    );
-    println!(
-        "  {} Additional .nix files: {}",
-        "●".green(),
-        discovery.nix_files.len()
-    );
-    println!();
+    style::kv("NixOS hosts", &discovery.nixos_hosts.len().to_string());
+    style::kv("Home configs", &discovery.home_configs.len().to_string());
+    style::kv("Additional .nix files", &discovery.nix_files.len().to_string());
 
     if dry_run {
-        println!(
-            "{}",
-            "DRY RUN: Would generate i-nix structure.".yellow().bold()
-        );
+        style::warning("Dry run — would generate i-nix structure (no changes made).");
         return Ok(());
     }
 
@@ -90,7 +56,7 @@ pub async fn run(
     let out = Path::new(output_dir);
     let engine = NixEngine::new(out, &hostname, &username);
 
-    println!("{} Generating i-nix structure...", "→".cyan());
+    style::step_simple("Generating i-nix structure...");
 
     // Base init (creates dirs + standard boilerplate)
     engine.init("system", discovery.has_home_manager)?;
@@ -206,7 +172,7 @@ pub async fn run(
 
     // ── 4. Format with nix fmt ──
     if !no_fmt {
-        println!("{} Running nix fmt...", "→".cyan());
+        style::step_simple("Running nix fmt...");
         match std::process::Command::new("nix")
             .args([
                 "fmt",
@@ -219,14 +185,14 @@ pub async fn run(
             .output()
         {
             Ok(output) if output.status.success() => {
-                println!("  {} Formatted with nix fmt", "✓".green());
+                style::success("Formatted with nix fmt");
             }
             Ok(output) => {
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                eprintln!("  {} nix fmt warning: {}", "⚠".yellow(), stderr.trim());
+                style::warning(format!("nix fmt: {}", stderr.trim()).as_str());
             }
             Err(e) => {
-                eprintln!("  {} Could not run nix fmt: {}", "⚠".yellow(), e);
+                style::warning(format!("Could not run nix fmt: {}", e).as_str());
             }
         }
     }
