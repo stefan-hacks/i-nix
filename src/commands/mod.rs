@@ -9,6 +9,7 @@ pub mod doctor;
 pub mod edit;
 pub mod enable;
 pub mod home;
+pub mod import;
 pub mod init;
 pub mod install;
 pub mod list;

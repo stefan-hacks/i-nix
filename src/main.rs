@@ -135,6 +135,19 @@ enum Commands {
         write: bool,
     },
 
+    /// Import an existing flake/flake-parts/home-manager/disko repo into i-nix structure
+    Import {
+        /// Path to the existing repository to import
+        #[arg(required = true)]
+        source: String,
+        /// Output directory (default: ~/.config/i-nix)
+        #[arg(short, long)]
+        output: Option<String>,
+        /// Skip nix fmt on output
+        #[arg(long)]
+        no_fmt: bool,
+    },
+
     /// Diagnose the Nix/NixOS/i-nix installation
     Doctor,
 
@@ -335,6 +348,10 @@ async fn main() {
         }
         Commands::Adopt { write } => {
             adopt::run(&config_dir, write, cli.verbose, cli.dry_run).await
+        }
+        Commands::Import { source, output, no_fmt } => {
+            let output_dir = output.unwrap_or_else(|| config_dir.clone());
+            import::run(&source, &output_dir, cli.verbose, cli.dry_run, no_fmt).await
         }
         Commands::Doctor => {
             doctor::run(&config_dir).await
