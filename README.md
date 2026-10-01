@@ -28,6 +28,7 @@ USER
 │ enable      │
 │ disable     │
 │ adopt       │
+│ import      │
 └──────┬──────┘
        │
        ▼
@@ -206,13 +207,47 @@ sudo cp target/release/i-nix /usr/local/bin/
 | `update` | Update flake inputs | `i-nix update` |
 | `edit` | Open config in $EDITOR | `i-nix edit packages` |
 | `why` | Show dependency chain | `i-nix why firefox` |
-| `adopt` | Discover current system state | `i-nix adopt --write` |
-| `doctor` | Diagnose Nix/NixOS health | `i-nix doctor` |
-| `sync` | Detect & re-import changes | `i-nix sync --yes` |
+|| `adopt` | Discover current system state | `i-nix adopt --write` |
+|| `import` | Import existing flake repo into i-nix | `i-nix import ~/my-nix-config` |
+|| `doctor` | Diagnose Nix/NixOS health | `i-nix doctor` |
+|| `sync` | Detect & re-import changes | `i-nix sync --yes` |
 | `shell` | Start dev shell | `i-nix shell python nodejs` |
 | `dev` | Scaffold project flake | `i-nix dev rust my-project` |
 | `container` | Build OCI images | `i-nix container build .#my-image` |
-| `tui` | Launch interactive terminal UI | `i-nix tui` |
+|| `tui` | Launch interactive terminal UI | `i-nix tui` |
+
+---
+
+## Importing Existing Configurations
+
+If you already have a NixOS/Home Manager flake (or a flake-parts/disko/sops-nix setup), you can migrate it into i-nix's optimal structure in one command:
+
+```bash
+# Import an existing repo into ~/.config/i-nix (default output)
+i-nix import ~/my-existing-nix-config
+
+# Import to a specific directory
+i-nix import ~/my-existing-nix-config --output ~/my-new-config
+
+# Skip nix fmt on output
+i-nix import ~/my-existing-nix-config --no-fmt
+```
+
+**What the importer detects:**
+- `flake.nix` inputs (nixpkgs, home-manager, flake-parts, disko, sops-nix, impermanence, etc.)
+- NixOS host declarations and system configuration
+- Home Manager user configurations
+- Hardware configuration and disko layouts
+- Desktop environments (GNOME, KDE, Hyprland, Sway, etc.)
+- Shell configurations (bash, zsh, fish)
+
+**What it generates:**
+- A clean, `nix fmt`-ready `flake.nix`
+- `hosts/default.nix` with all machine declarations
+- `systems/<hostname>/` with `default.nix`, `hardware.nix`, `network.nix`
+- `users/<username>/` with `packages/`, `programs/`, `services/`, `desktop/`, `shells/`, `secrets/`
+- `profiles/` for composable feature bundles (core, desktop, development, gaming, server)
+- `modules/`, `overlays/`, `pkgs/`, `lib/` scaffolding
 
 ---
 
